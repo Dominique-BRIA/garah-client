@@ -39,11 +39,11 @@
   --surface-douce: rgba(15, 23, 42, 0.04);
   --surface-douce-survol: #f1f5f9;
   --verre-fond: rgba(255, 255, 255, 0.7);
-  --verre-bordure: rgba(226, 232, 240, 0.8);
+  --verre-bordure: rgba(148, 163, 184, 0.55);
   --verre-ombre: 0 8px 32px rgba(15, 23, 42, 0.05);
   --champ-fond: rgba(255, 255, 255, 0.8);
   --champ-fond-actif: #ffffff;
-  --champ-bordure: rgba(0, 0, 0, 0.1);
+  --champ-bordure: rgba(0, 0, 0, 0.18);
 }
 
 @mixin jetons-sombres {
@@ -54,11 +54,11 @@
   --surface-douce: rgba(255, 255, 255, 0.05);
   --surface-douce-survol: #1a1a2e;
   --verre-fond: rgba(18, 18, 30, 0.75);
-  --verre-bordure: rgba(170, 59, 255, 0.15);
+  --verre-bordure: rgba(170, 59, 255, 0.32);
   --verre-ombre: 0 8px 32px rgba(0, 0, 0, 0.4);
   --champ-fond: rgba(255, 255, 255, 0.03);
   --champ-fond-actif: rgba(26, 26, 42, 0.95);
-  --champ-bordure: rgba(255, 255, 255, 0.1);
+  --champ-bordure: rgba(255, 255, 255, 0.18);
 }
 
 // ⚠️ La garde `:not([data-theme="light"])` est indispensable : sans elle,

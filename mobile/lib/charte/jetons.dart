@@ -29,11 +29,11 @@ abstract final class Jetons {
   static const clairSurfaceDouce = Color(0x0A0F172A);
   static const clairSurfaceDouceSurvol = Color(0xFFF1F5F9);
   static const clairVerreFond = Color(0xB3FFFFFF);
-  static const clairVerreBordure = Color(0xCCE2E8F0);
+  static const clairVerreBordure = Color(0x8C94A3B8);
   // clairVerreOmbre : « 0 8px 32px rgba(15, 23, 42, 0.05) » n'est pas une couleur simple, à porter par le widget.
   static const clairChampFond = Color(0xCCFFFFFF);
   static const clairChampFondActif = Color(0xFFFFFFFF);
-  static const clairChampBordure = Color(0x1A000000);
+  static const clairChampBordure = Color(0x2E000000);
 
   // --- Thème sombre ---
   static const sombreFond = Color(0xFF0C0C14);
@@ -43,11 +43,11 @@ abstract final class Jetons {
   static const sombreSurfaceDouce = Color(0x0DFFFFFF);
   static const sombreSurfaceDouceSurvol = Color(0xFF1A1A2E);
   static const sombreVerreFond = Color(0xBF12121E);
-  static const sombreVerreBordure = Color(0x26AA3BFF);
+  static const sombreVerreBordure = Color(0x52AA3BFF);
   // sombreVerreOmbre : « 0 8px 32px rgba(0, 0, 0, 0.4) » n'est pas une couleur simple, à porter par le widget.
   static const sombreChampFond = Color(0x08FFFFFF);
   static const sombreChampFondActif = Color(0xF21A1A2A);
-  static const sombreChampBordure = Color(0x1AFFFFFF);
+  static const sombreChampBordure = Color(0x2EFFFFFF);
 
   // --- Rayons ---
   static const rayonPetit = 8.0;

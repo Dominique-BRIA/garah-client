@@ -40,11 +40,11 @@
     "surfaceDouce": "rgba(15, 23, 42, 0.04)",
     "surfaceDouceSurvol": "#f1f5f9",
     "verreFond": "rgba(255, 255, 255, 0.7)",
-    "verreBordure": "rgba(226, 232, 240, 0.8)",
+    "verreBordure": "rgba(148, 163, 184, 0.55)",
     "verreOmbre": "0 8px 32px rgba(15, 23, 42, 0.05)",
     "champFond": "rgba(255, 255, 255, 0.8)",
     "champFondActif": "#ffffff",
-    "champBordure": "rgba(0, 0, 0, 0.1)"
+    "champBordure": "rgba(0, 0, 0, 0.18)"
   },
 
   "sombre": {
@@ -55,11 +55,11 @@
     "surfaceDouce": "rgba(255, 255, 255, 0.05)",
     "surfaceDouceSurvol": "#1a1a2e",
     "verreFond": "rgba(18, 18, 30, 0.75)",
-    "verreBordure": "rgba(170, 59, 255, 0.15)",
+    "verreBordure": "rgba(170, 59, 255, 0.32)",
     "verreOmbre": "0 8px 32px rgba(0, 0, 0, 0.4)",
     "champFond": "rgba(255, 255, 255, 0.03)",
     "champFondActif": "rgba(26, 26, 42, 0.95)",
-    "champBordure": "rgba(255, 255, 255, 0.1)"
+    "champBordure": "rgba(255, 255, 255, 0.18)"
   },
 
   "rayons": {

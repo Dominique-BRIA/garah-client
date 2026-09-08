@@ -12,7 +12,17 @@
   <meta name="theme-color" content="#6366f1">
 
   <base href="/">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <!-- Deux icones declarees, et celui qui comprend le SVG le choisit. Le .ico
+       reste pour les navigateurs anciens — et pour la barre des taches de
+       Windows, qui ne lit toujours que lui.
+
+       ⚠️ L'anse du SVG est plus EPAISSE que dans le logo de l'application :
+          6,2 au lieu de 5. A 16 px, un trait de 5 unites sur une grille de 48
+          tombe a 1,7 pixel physique, que le navigateur etale en halo. C'est
+          la meme marque a une autre echelle, comme une fonte a ses coupes de
+          petit corps. Ne pas « harmoniser » les deux valeurs. -->
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" sizes="any">
 
   <!--
     La police est chargée en second plan, jamais en bloquant.
