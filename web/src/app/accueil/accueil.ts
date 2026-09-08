@@ -3,8 +3,15 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-import { Categorie, Page, ResumeProduit, montantLisible } from '../../modeles/catalogue';
+import {
+  Categorie,
+  Page,
+  ProduitTendance,
+  ResumeProduit,
+  montantLisible,
+} from '../../modeles/catalogue';
 import { BasculeTheme } from '../bascule-theme';
+import { Coeur } from '../coeur';
 import { Marque } from '../marque';
 import { ServiceTheme } from '../../services/theme';
 
@@ -21,7 +28,7 @@ import { ServiceTheme } from '../../services/theme';
  */
 @Component({
   selector: 'gb-accueil',
-  imports: [FormsModule, RouterLink, Marque, BasculeTheme],
+  imports: [FormsModule, RouterLink, Marque, BasculeTheme, Coeur],
   templateUrl: './accueil.html',
   styleUrl: './accueil.scss',
 })
@@ -60,13 +67,20 @@ export class Accueil {
     this.chargement.set(true);
     this.erreur.set(null);
 
-    this.http.get<ResumeProduit[]>('/api/produits/tendance?limite=6').subscribe({
-      next: (p) => {
-        this.tendances.set(p);
+    // ⚠️ CETTE ROUTE NE REND PAS DES PRODUITS, mais un CLASSEMENT.
+    //
+    //    Elle vient du module de mesure : { produitId, nom, ventes, vues,
+    //    croissance }. Ni photo, ni prix, ni slug. Une première version la
+    //    lisait comme une liste de produits — les cartes se dessinaient sans
+    //    image, sans prix, et leur lien menait à « /produit/undefined ».
+    //
+    //    Le défaut ne se voyait pas : un catalogue neuf n'a aucune tendance,
+    //    donc la liste était vide et le bloc affichait sa phrase d'attente.
+    //    Il serait apparu le jour de la première vente.
+    this.http.get<ProduitTendance[]>('/api/produits/tendance?limite=6').subscribe({
+      next: (classement) => {
         this.chargement.set(false);
-        // Le catalogue est demandé APRÈS les tendances : il a besoin de savoir
-        // lesquelles retirer, et les lancer en parallèle obligerait à
-        // dédoublonner deux fois.
+        this.chargerLesVignettes(classement.map((t) => t.produitId));
         this.chargerLeReste();
       },
       error: (e: unknown) => {
@@ -84,6 +98,35 @@ export class Accueil {
       next: (c) => this.categories.set(c.filter((x) => x.parentId === null).slice(0, 6)),
       error: () => this.categories.set([]),
     });
+  }
+
+  /**
+   * Les vignettes du classement, en UNE requête.
+   *
+   * <p>Le classement rend des identifiants ; il faut des photos et des prix
+   * pour dessiner une carte. Demander une fiche par ligne ferait six requêtes
+   * pour six vignettes — la règle du projet est une requête par page.</p>
+   *
+   * <p>⚠️ Le serveur rend les produits <b>dans l'ordre demandé</b> : pour les
+   * tendances, l'ordre EST le classement. Il en retire ceux qui ne sont plus
+   * publiés, si bien qu'on peut recevoir moins de vignettes que de places au
+   * palmarès — une place vide vaut mieux qu'un article qu'on ne peut plus
+   * acheter.</p>
+   */
+  private chargerLesVignettes(ids: readonly number[]): void {
+    if (ids.length === 0) {
+      this.tendances.set([]);
+      return;
+    }
+
+    this.http
+      .get<ResumeProduit[]>(`/api/produits/par-ids?ids=${ids.join(',')}`)
+      .subscribe({
+        next: (p) => this.tendances.set(p),
+        // Le bloc affiche alors sa phrase d'attente, et le catalogue prend le
+        // relais juste en dessous.
+        error: () => this.tendances.set([]),
+      });
   }
 
   /** Le catalogue, moins ce qui est déjà en tendance. */

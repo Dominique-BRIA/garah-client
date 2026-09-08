@@ -150,6 +150,18 @@
 
 .carte__silhouette { width: 38px; height: 38px; }
 
+// Le cœur, en surimpression sur la photo. Il ne prend donc aucune place dans
+// la carte : la grille garde exactement la meme hauteur de ligne, avec ou
+// sans lui.
+.carte { position: relative; }
+
+.carte__coeur {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 2;
+}
+
 .carte__corps {
   padding: 0.7rem 0.75rem 0.85rem;
   display: flex;

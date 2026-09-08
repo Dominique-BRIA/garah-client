@@ -5,6 +5,12 @@ import { RouterLink } from '@angular/router';
 import { montantLisible } from '../../modeles/catalogue';
 
 interface LigneCommande {
+  /*
+   * L'identifiant de la LIGNE, distinct de celui de la variante. C'est lui
+   * qu'un retour désigne : la ligne porte le prix figé, donc le montant
+   * remboursable.
+   */
+  readonly id: number;
   readonly varianteId: number;
   readonly designation: string;
   readonly quantite: number;
@@ -141,7 +147,7 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
       <section class="bloc">
         <p class="gb-libelle">Articles</p>
         <div class="lignes">
-          @for (l of c.lignes; track l.varianteId) {
+          @for (l of c.lignes; track l.id) {
             <div class="ligne">
               <div class="ligne__texte">
                 <p class="ligne__nom">{{ l.designation }}</p>
@@ -188,9 +194,19 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
            oubli : le stock est engagé et l'acheminement peut être parti. Une
            règle métier invisible à l'écran ne protège de rien — elle produit
            des réclamations. On dit donc où s'adresser. -->
-      <p class="recours">
-        Un problème sur cette commande ? Écrivez-nous : un conseiller l’examine.
-      </p>
+      <div class="recours">
+        <p>Un problème avec cette commande ?</p>
+        <div class="recours__liens">
+          <!-- Le retour porte l'identifiant de LA commande : le formulaire
+               s'ouvre déjà rempli du bon contexte, et personne ne recopie un
+               numéro. -->
+          <a [routerLink]="['/mes-retours']" [queryParams]="{ commande: c.id }"
+             class="gb-btn gb-btn--secondaire">Retourner des articles</a>
+          <a routerLink="/mes-reclamations" class="gb-btn gb-btn--secondaire">
+            Ouvrir une réclamation
+          </a>
+        </div>
+      </div>
     }
   `,
   styles: `
@@ -290,10 +306,13 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
 
     .recours {
       padding: 1.5rem 1.25rem 2rem;
-      font-size: 0.8rem;
+      font-size: 0.83rem;
       color: var(--texte-attenue);
       line-height: 1.6;
     }
+
+    .recours p { margin: 0 0 0.7rem; }
+    .recours__liens { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 
     /* Sur un écran large, deux colonnes : où aller à gauche, ce qu'on a acheté
        à droite. Empiler laisserait le code de retrait seul au milieu d'un

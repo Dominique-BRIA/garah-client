@@ -14,6 +14,8 @@ import {
   plagePalier,
 } from '../../modeles/catalogue';
 import { PanierLocal } from '../../services/panier-local';
+import { ServiceSession } from '../../services/session';
+import { Coeur } from '../coeur';
 
 /**
  * La fiche produit.
@@ -38,7 +40,7 @@ import { PanierLocal } from '../../services/panier-local';
  */
 @Component({
   selector: 'gb-produit',
-  imports: [RouterLink],
+  imports: [RouterLink, Coeur],
   templateUrl: './produit.html',
   styleUrl: './produit.scss',
 })
@@ -46,6 +48,7 @@ export class Produit {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly panier = inject(PanierLocal);
+  private readonly session = inject(ServiceSession);
 
   /** Lié depuis la route par `withComponentInputBinding()`. */
   readonly slug = input.required<string>();
@@ -60,6 +63,7 @@ export class Produit {
   protected readonly lienCopie = signal(false);
   protected readonly quantite = signal(1);
   protected readonly ajoute = signal(false);
+  protected readonly negociation = signal(false);
 
   /** La déclinaison choisie, ou la première proposée. */
   protected readonly declinaison = computed<Declinaison | null>(() => {
@@ -281,11 +285,62 @@ export class Produit {
       });
   }
 
+  /**
+   * Ouvre une négociation sur CET article.
+   *
+   * <h2>🎯 Le bouton ouvre vraiment une discussion</h2>
+   *
+   * <p>Il se contentait de rediriger vers la connexion, même déjà connecté :
+   * on cliquait, on arrivait sur un écran de mot de passe, et la négociation
+   * n'existait nulle part. Elle vit dans une conversation, et c'est celle-là
+   * qu'on ouvre.</p>
+   *
+   * <p>Le sujet et le premier message portent le nom de l'article et la
+   * quantité affichée : le conseiller qui prend la main sait de quoi on parle
+   * sans rien demander. Le <b>prix</b> ne s'y met pas — il se propose comme
+   * une offre datée, dans le fil, pas comme une phrase.</p>
+   *
+   * <p>⚠️ Sans compte, on passe par la connexion avec l'adresse de retour :
+   * la négociation exige d'être identifié, mais renvoyer sans retour ferait
+   * perdre l'article qu'on regardait.</p>
+   */
   protected negocier(): void {
-    // La négociation vit dans une conversation, qui exige un compte.
-    this.router.navigate(['/connexion'], {
-      queryParams: { suite: `/produit/${this.slug()}` },
-    });
+    const f = this.fiche();
+    const d = this.declinaison();
+    if (!f || !d || this.negociation()) {
+      return;
+    }
+
+    if (!this.session.connecte()) {
+      this.router.navigate(['/connexion'], {
+        queryParams: { suite: `/produit/${this.slug()}` },
+      });
+      return;
+    }
+
+    this.negociation.set(true);
+
+    const article = f.declinaisons.length > 1 ? `${f.nom} — ${d.libelle}` : f.nom;
+
+    this.http
+      .post<{ id: number }>('/api/conversations', {
+        sujet: `Négociation : ${article}`.slice(0, 200),
+        premierMessage:
+          `Bonjour, je souhaite négocier le prix de « ${article} » `
+          + `pour ${this.quantite()} pièce(s).`,
+      })
+      .subscribe({
+        next: (c) => {
+          this.negociation.set(false);
+          this.router.navigate(['/mes-discussions', c.id]);
+        },
+        error: () => {
+          this.negociation.set(false);
+          // On ne bloque pas sur cet écran : la liste des discussions
+          // permettra d'en ouvrir une à la main.
+          this.router.navigate(['/mes-discussions']);
+        },
+      });
   }
 
   // -------------------------------------------------------------------------

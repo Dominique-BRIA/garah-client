@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { ServiceSession } from '../../services/session';
+import { MenuCompte } from './menu-compte';
 
 interface MonProfil {
   readonly id: number;
@@ -31,7 +32,7 @@ interface MonProfil {
  */
 @Component({
   selector: 'gb-profil',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MenuCompte],
   templateUrl: './profil.html',
   styleUrl: './profil.scss',
 })

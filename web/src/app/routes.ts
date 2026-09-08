@@ -102,6 +102,38 @@ export const routes: Routes = [
       import('./compte/detail-commande').then((m) => m.DetailCommandeEcran),
   },
   {
+    path: 'ma-liste',
+    canActivate: [gardeSession],
+    loadComponent: () => import('./compte/favoris').then((m) => m.Favoris),
+  },
+  {
+    path: 'mes-reclamations',
+    canActivate: [gardeSession],
+    loadComponent: () => import('./compte/reclamations').then((m) => m.Reclamations),
+  },
+  /**
+   * Mes retours.
+   *
+   * Le formulaire s'ouvre avec `?commande=<id>`, depuis le detail d'une
+   * commande. Sans ce parametre, l'ecran n'affiche que la liste — on peut
+   * suivre ses retours sans en demander un nouveau.
+   */
+  {
+    path: 'mes-retours',
+    canActivate: [gardeSession],
+    loadComponent: () => import('./compte/retours').then((m) => m.Retours),
+  },
+  {
+    path: 'mes-discussions',
+    canActivate: [gardeSession],
+    loadComponent: () => import('./compte/discussions').then((m) => m.Discussions),
+  },
+  {
+    path: 'mes-discussions/:id',
+    canActivate: [gardeSession],
+    loadComponent: () => import('./compte/discussion').then((m) => m.Discussion),
+  },
+  {
     path: 'profil',
     canActivate: [gardeSession],
     loadComponent: () => import('./compte/profil').then((m) => m.Profil),

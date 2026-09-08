@@ -60,6 +60,7 @@
   <div class="titre">
     <div class="titre__ligne">
       <h1>{{ f.nom }}</h1>
+      <gb-coeur [produitId]="f.id" [retour]="'/produit/' + f.slug" />
       <button type="button" class="partage" (click)="partager()" aria-label="Partager cet article">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="18" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.7" />
@@ -193,7 +194,8 @@
     <!-- Actions. « Négocier » est au MÊME niveau qu'« Ajouter » : c'est un
          vrai flux commercial, pas une messagerie. -->
     <div class="actions">
-      <button type="button" class="gb-btn gb-btn--secondaire actions__negocier" (click)="negocier()">
+      <button type="button" class="gb-btn gb-btn--secondaire actions__negocier"
+              [disabled]="negociation()" (click)="negocier()">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M5 5h14v10H9l-4 4V5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
         </svg>

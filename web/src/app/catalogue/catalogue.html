@@ -42,6 +42,10 @@
   <div class="grille">
     @for (p of produits(); track p.id) {
       <a class="carte" [routerLink]="['/produit', p.slug]">
+        <!-- Le cœur est POSÉ sur la carte, qui est elle-même un lien : il arrête
+             donc l'événement. Sans cela, un clic dessus ouvrirait la fiche — on
+             croirait avoir enregistré un article et on se retrouverait ailleurs. -->
+        <gb-coeur class="carte__coeur" [produitId]="p.id" />
         <div class="carte__image">
           @if (p.urlPhotoPrincipale) {
             <img [src]="p.urlPhotoPrincipale" [alt]="p.nom" loading="lazy" decoding="async" />

@@ -35,6 +35,9 @@ export class ServiceSession {
   readonly connecte = computed(() => this.utilisateur() !== null);
   readonly nom = computed(() => this.utilisateur()?.nom ?? null);
 
+  /** Qui je suis, cote serveur. Sert a distinguer MES messages dans un fil. */
+  readonly utilisateurId = computed(() => this.utilisateur()?.id ?? null);
+
   /** Vrai tant qu'on ne sait pas encore si une session existe. */
   readonly enCoursDeRestauration = signal(false);
 

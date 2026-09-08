@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { Page, ResumeProduit, montantLisible } from '../../modeles/catalogue';
+import { Coeur } from '../coeur';
 
 /**
  * Le catalogue.
@@ -20,7 +21,7 @@ import { Page, ResumeProduit, montantLisible } from '../../modeles/catalogue';
  */
 @Component({
   selector: 'gb-catalogue',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, Coeur],
   templateUrl: './catalogue.html',
   styleUrl: './catalogue.scss',
 })

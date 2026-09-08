@@ -7,6 +7,28 @@
 // et l'ecran l'affiche vide.
 // =============================================================================
 
+/**
+ * Une place au classement des tendances. `GET /api/produits/tendance`
+ *
+ * ⚠️ CE N'EST PAS UN PRODUIT. La route vient du module de mesure : elle rend
+ *    un classement, pas du catalogue — ni photo, ni prix, ni slug. Pour
+ *    dessiner une vignette, il faut compléter avec
+ *    `GET /api/produits/par-ids`.
+ *
+ *    Une première version lisait cette réponse comme un `ResumeProduit` : les
+ *    cartes se dessinaient sans image ni prix, et leur lien menait à
+ *    « /produit/undefined ». Le défaut restait invisible tant qu'aucune vente
+ *    n'avait eu lieu, puisque le classement était vide.
+ */
+export interface ProduitTendance {
+  readonly produitId: number;
+  readonly nom: string;
+  readonly ventesRecentes: number;
+  readonly ventesPrecedentes: number;
+  readonly vuesRecentes: number;
+  readonly croissance: number;
+}
+
 /** Une page renvoyee par Spring Data. */
 export interface Page<T> {
   readonly content: T[];

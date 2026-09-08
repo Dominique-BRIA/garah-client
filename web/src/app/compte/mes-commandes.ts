@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { Page, montantLisible } from '../../modeles/catalogue';
+import { MenuCompte } from './menu-compte';
 import { ServiceSession } from '../../services/session';
 
 interface ResumeCommandeClient {
@@ -38,7 +39,7 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
  */
 @Component({
   selector: 'gb-mes-commandes',
-  imports: [RouterLink],
+  imports: [RouterLink, MenuCompte],
   template: `
     <header class="entete">
       <div>
@@ -51,6 +52,8 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
         Se déconnecter
       </button>
     </header>
+
+    <gb-menu-compte />
 
     @if (erreur(); as m) {
       <div class="gb-etat">
@@ -106,8 +109,13 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
 
     <!-- La voie de recours. Elle est ICI parce qu'on ne s'annule pas soi-même
          après paiement : sans elle, la règle serait simplement brutale. -->
+    <!-- ⚠️ La voie de recours est un LIEN, plus une phrase. Dire « écrivez-nous »
+         sans dire où revient à ne rien dire : on cherchait une adresse
+         introuvable, et on renonçait. -->
     <p class="recours">
-      Un problème sur une commande ? Écrivez-nous : un conseiller l’examine.
+      Un problème sur une commande ?
+      <a routerLink="/mes-reclamations">Ouvrez une réclamation</a> — un
+      conseiller l’examine.
     </p>
   `,
   styles: `
