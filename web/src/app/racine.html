@@ -9,6 +9,17 @@
     </a>
 
     <nav class="liens" aria-label="Navigation">
+      <!-- ⚠️ `exact` est indispensable ici : « / » est le prefixe de TOUTES les
+           routes, et sans lui « Accueil » resterait souligne sur le catalogue,
+           sur le panier, partout. On ne saurait plus ou l'on est.
+
+           La marque mene deja a l'accueil, mais elle se lit comme un logo, pas
+           comme une destination : on ne pense a cliquer dessus qu'apres avoir
+           cherche le lien qui manquait. -->
+      <a routerLink="/" routerLinkActive="liens__lien--actif"
+         [routerLinkActiveOptions]="{ exact: true }" class="liens__lien">
+        Accueil
+      </a>
       <a routerLink="/catalogue" routerLinkActive="liens__lien--actif" class="liens__lien">
         Catalogue
       </a>
@@ -104,6 +115,7 @@
     <nav class="pied__colonnes" aria-label="Liens de bas de page">
       <div class="pied__colonne">
         <p class="pied__titre">La boutique</p>
+        <a routerLink="/">Accueil</a>
         <a routerLink="/catalogue">Catalogue</a>
         <a routerLink="/panier">Mon panier</a>
       </div>

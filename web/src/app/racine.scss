@@ -89,10 +89,17 @@
     z-index: 20;
   }
 
+  // 🎯 L'en-tete va d'un BORD A L'AUTRE, contrairement au contenu.
+  //
+  //    Le contenu est borne a 1 180 px pour rester lisible ; la barre, elle,
+  //    est le cadre de la fenetre. Bornee comme le contenu, la marque flottait
+  //    au milieu avec du vide a sa gauche, et la bascule de theme n'etait plus
+  //    « tout au fond » a droite : elle s'arretait a la meme marge invisible.
+  //
+  //    GARAH tout a gauche, les actions tout a droite, la recherche entre les
+  //    deux — c'est la lecture attendue d'une barre de navigation.
   .entete__interieur {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 1.5rem;
     height: 64px;
     display: flex;
     align-items: center;
