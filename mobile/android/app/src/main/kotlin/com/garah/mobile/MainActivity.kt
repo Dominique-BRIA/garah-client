@@ -1,4 +1,4 @@
-package com.garah.garah_mobile
+package com.garah.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

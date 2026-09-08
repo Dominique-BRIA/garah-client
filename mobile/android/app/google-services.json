@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "215742260538",
+    "project_id": "garah-project",
+    "storage_bucket": "garah-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:215742260538:android:98abe5d4b3238c90c49c03",
+        "android_client_info": {
+          "package_name": "com.garah.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVfHM_5xOkBLEQS1FGNE6AcRe0Y-caIgw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

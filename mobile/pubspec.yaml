@@ -30,6 +30,12 @@ dependencies:
   # mot de passe au clavier tactile.
   shared_preferences: ^2.5.3
 
+  # Les notifications. `firebase_core` est obligatoire et n'est pas un
+  # doublon : c'est lui qui lit google-services.json et pose la connexion au
+  # projet ; `firebase_messaging` ne fait que s'en servir.
+  firebase_core: ^3.15.2
+  firebase_messaging: ^15.2.10
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

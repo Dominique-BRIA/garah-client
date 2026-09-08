@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'api/client_api.dart';
 import 'charte/theme.dart';
 import 'coque.dart';
+import 'services/notifications.dart';
 import 'services/panier_local.dart';
 import 'services/services.dart';
 import 'services/session.dart';
@@ -34,6 +35,7 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
   late final PanierLocal _panier;
   late final ServiceSession _session;
   late final ServiceTheme _theme;
+  late final ServiceNotifications _notifications;
 
   @override
   void initState() {
@@ -42,6 +44,7 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
     _panier = PanierLocal();
     _session = ServiceSession(_api, _panier);
     _theme = ServiceTheme();
+    _notifications = ServiceNotifications(_api, _session);
 
     // Trois lectures locales, aucune bloquante : l'application s'ouvre tout de
     // suite — en clair et déconnectée — puis se corrige. Attendre le réseau
@@ -50,10 +53,18 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
     _theme.relire();
     _panier.relire();
     _session.reprendre();
+
+    // ⚠️ EN DERNIER, et sans `await` : l'abonnement aux notifications
+    //    interroge le réseau et peut demander une permission à l'écran. Le
+    //    mettre devant retarderait la première image de plusieurs secondes,
+    //    et sur un téléphone sans services Google il la retarderait pour
+    //    rien.
+    _notifications.demarrer();
   }
 
   @override
   void dispose() {
+    _notifications.arreter();
     _session.dispose();
     _panier.dispose();
     _theme.dispose();
