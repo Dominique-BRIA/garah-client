@@ -7,6 +7,9 @@ import '../modeles/catalogue.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
 import 'connexion.dart';
+import 'detail_commande.dart';
+import 'favoris.dart';
+import 'sav.dart';
 import 'suivi.dart';
 
 /// Un résumé de commande, tel que la liste l'affiche.
@@ -36,22 +39,6 @@ class _ResumeCommande {
     nombreLignes: (j['lignes'] as List<dynamic>?)?.length ?? 0,
   );
 }
-
-/// Les statuts, dits en français.
-///
-/// ⚠️ Les codes du serveur ne s'affichent JAMAIS tels quels : « EN_ATTENTE_
-///    PAIEMENT » apprendrait au client un vocabulaire interne qui n'est pas le
-///    sien, et qui changera sans qu'on le prévienne.
-const _statuts = <String, ({String texte, Color? couleur})>{
-  'EN_ATTENTE_PAIEMENT': (texte: 'À payer', couleur: Jetons.alerte),
-  'PAYEE': (texte: 'Payée', couleur: Jetons.info),
-  'EN_PREPARATION': (texte: 'En préparation', couleur: Jetons.info),
-  'PRETE': (texte: 'Prête', couleur: Jetons.info),
-  'EXPEDIEE': (texte: 'En route', couleur: Jetons.info),
-  'DISPONIBLE': (texte: 'À retirer', couleur: Jetons.succes),
-  'RETIREE': (texte: 'Retirée', couleur: null),
-  'ANNULEE': (texte: 'Annulée', couleur: null),
-};
 
 /// L'espace personnel.
 ///
@@ -231,72 +218,120 @@ class _EcranCompteState extends State<EcranCompte> {
             )
           else
             for (final c in _commandes) _uneCommande(context, c),
-          const SizedBox(height: 20),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.local_shipping_outlined),
-            title: const Text('Suivre un colis'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const EcranSuivi())),
+          const SizedBox(height: 12),
+          const Divider(),
+          _entree(
+            context,
+            icone: Icons.favorite_border,
+            titre: 'Ma liste',
+            ecran: () => const EcranFavoris(),
+          ),
+          _entree(
+            context,
+            icone: Icons.assignment_return_outlined,
+            titre: 'Réclamations et retours',
+            ecran: () => const EcranSav(),
+          ),
+          _entree(
+            context,
+            icone: Icons.forum_outlined,
+            titre: 'Mes discussions',
+            ecran: () => const EcranDiscussions(),
+          ),
+          _entree(
+            context,
+            icone: Icons.local_shipping_outlined,
+            titre: 'Suivre un colis',
+            ecran: () => const EcranSuivi(),
           ),
         ],
       ),
     );
   }
 
+  /// Une entrée de l'espace personnel.
+  ///
+  /// Écrite une fois : quatre ListTile recopiés divergeraient au premier
+  /// ajustement — l'un garderait sa flèche, l'autre non.
+  Widget _entree(
+    BuildContext context, {
+    required IconData icone,
+    required String titre,
+    required Widget Function() ecran,
+  }) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: Icon(icone),
+    title: Text(titre, style: const TextStyle(fontSize: 14.5)),
+    trailing: const Icon(Icons.chevron_right),
+    onTap: () =>
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => ecran())),
+  );
+
   Widget _uneCommande(BuildContext context, _ResumeCommande c) {
-    final etat = _statuts[c.statut];
+    final etat = statutsCommande[c.statut];
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border.all(color: context.bordure),
         borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => EcranDetailCommande(commandeId: c.id),
+          ),
+        ),
+        borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
-                child: Text(
-                  c.numero,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      c.numero,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Etiquette(
+                    texte: etat?.texte ?? c.statut,
+                    couleur: etat?.couleur,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${c.nombreLignes} article(s) · ${montantLisible(c.montantTotal, c.devise)}',
+                style: TextStyle(fontSize: 12.5, color: context.texteAttenue),
+              ),
+              // ⚠️ Le CODE DE RETRAIT n'est pas dans cette liste, et ce n'est pas un
+              //    oubli : c'est un secret partagé, qui suffit à emporter la
+              //    marchandise. Ici, il apparaîtrait sur la capture d'écran qu'on
+              //    envoie à un proche pour lui montrer ses achats.
+              if (c.statut == 'DISPONIBLE') ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Votre marchandise vous attend. Ouvrez la commande pour voir '
+                  'votre code de retrait.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: Jetons.succes,
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Etiquette(texte: etat?.texte ?? c.statut, couleur: etat?.couleur),
+              ],
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            '${c.nombreLignes} article(s) · ${montantLisible(c.montantTotal, c.devise)}',
-            style: TextStyle(fontSize: 12.5, color: context.texteAttenue),
-          ),
-          // ⚠️ Le CODE DE RETRAIT n'est pas dans cette liste, et ce n'est pas un
-          //    oubli : c'est un secret partagé, qui suffit à emporter la
-          //    marchandise. Ici, il apparaîtrait sur la capture d'écran qu'on
-          //    envoie à un proche pour lui montrer ses achats.
-          if (c.statut == 'DISPONIBLE') ...[
-            const SizedBox(height: 8),
-            Text(
-              'Votre marchandise vous attend au point de récupération.',
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.4,
-                color: Jetons.succes,
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

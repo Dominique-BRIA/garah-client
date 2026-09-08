@@ -6,6 +6,7 @@ import '../modeles/catalogue.dart';
 import '../services/panier_local.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
+import 'commande.dart';
 import 'connexion.dart';
 
 /// Le panier.
@@ -251,19 +252,15 @@ class _Recapitulatif extends StatelessWidget {
                 listenable: services.session,
                 builder: (context, _) => FilledButton(
                   onPressed: () {
-                    if (!services.session.connecte) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const EcranConnexion(),
-                        ),
-                      );
-                      return;
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Le passage de commande arrive dans une prochaine version.',
-                        ),
+                    // 🎯 La connexion arrive ICI, jamais avant. On remplit son
+                    //    panier sans compte ; l'exiger au premier « Ajouter »
+                    //    ferait fuir. C'est aussi le moment où le panier local
+                    //    fusionne avec celui du serveur.
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => services.session.connecte
+                            ? const EcranCommande()
+                            : const EcranConnexion(),
                       ),
                     );
                   },
