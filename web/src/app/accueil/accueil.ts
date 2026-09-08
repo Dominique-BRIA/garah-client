@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { Categorie, Page, ResumeProduit, montantLisible } from '../../modeles/catalogue';
+import { BasculeTheme } from '../bascule-theme';
 import { Marque } from '../marque';
 import { ServiceTheme } from '../../services/theme';
 
@@ -20,7 +21,7 @@ import { ServiceTheme } from '../../services/theme';
  */
 @Component({
   selector: 'gb-accueil',
-  imports: [FormsModule, RouterLink, Marque],
+  imports: [FormsModule, RouterLink, Marque, BasculeTheme],
   templateUrl: './accueil.html',
   styleUrl: './accueil.scss',
 })

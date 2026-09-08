@@ -304,23 +304,9 @@
 
 // La bascule de theme, poussee a droite de la marque. Au telephone, c'est le
 // seul endroit en haut de page — la coque n'y affiche pas d'en-tete.
-.bascule {
-  margin-left: auto;
-  min-width: var(--cible-tactile-min);
-  min-height: var(--cible-tactile-min);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--verre-bordure);
-  border-radius: var(--rayon-petit);
-  background: var(--verre-fond);
-  color: var(--texte-attenue);
-  cursor: pointer;
-
-  svg { width: 19px; height: 19px; }
-  &:hover { color: var(--texte); }
-  &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
-}
+// La bascule est POUSSÉE à droite du bandeau : au téléphone c'est le seul
+// haut de page, et un réglage se range au bout, jamais au milieu du nom.
+.bascule { margin-left: auto; }
 
 // Sur ecran large, la coque porte deja la bascule : deux boutons pour le meme
 // geste sur la meme page feraient douter de leur effet.

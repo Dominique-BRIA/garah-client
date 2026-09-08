@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
+import { BasculeTheme } from './bascule-theme';
 import { Marque } from './marque';
 
 import { PanierLocal } from '../services/panier-local';
@@ -37,7 +38,7 @@ import { ServiceTheme } from '../services/theme';
  */
 @Component({
   selector: 'gb-racine',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, Marque],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, Marque, BasculeTheme],
   templateUrl: './racine.html',
   styleUrl: './racine.scss',
 })

@@ -112,6 +112,27 @@ body {
   &:active:not(:disabled) { transform: translateY(0); }
 }
 
+// Le VERT de la marque — la seule couleur qui ne change ni avec le thème ni
+// avec l'application. Même geste que le bouton primaire : dégradé à 135°,
+// ombre portée colorée, léger soulèvement au survol.
+//
+// ⚠️ Il ne remplace pas le violet. Le violet reste la couleur des actions d'un
+//    écran ; le vert est celui de l'entrée dans la boutique, et il perdrait ce
+//    sens à se retrouver partout.
+.gb-btn--marque {
+  background: linear-gradient(135deg, var(--marque) 0%, color-mix(in srgb, var(--marque) 78%, black) 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--marque) 30%, transparent);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--marque) 45%, transparent);
+  }
+
+  &:active:not(:disabled) { transform: translateY(0); }
+  &:focus-visible { outline-color: var(--marque); }
+}
+
 .gb-btn--secondaire {
   background: var(--surface-douce);
   border-color: var(--verre-bordure);
@@ -129,6 +150,11 @@ body {
 //    garde son état survolé jusqu'au prochain appui ailleurs, et l'utilisateur
 //    croit avoir laissé quelque chose de sélectionné.
 @media (hover: none) {
+  .gb-btn--marque:hover:not(:disabled) {
+    transform: none;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--marque) 30%, transparent);
+  }
+
   .gb-btn--primaire:hover:not(:disabled) {
     transform: none;
     box-shadow: 0 4px 12px color-mix(in srgb, var(--primaire) 30%, transparent);

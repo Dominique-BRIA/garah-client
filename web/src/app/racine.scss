@@ -46,6 +46,11 @@
 
 .barre__pastille { position: relative; display: inline-flex; }
 
+// Le panier est BLEU partout : barre du bas comme en-tête. Une même chose ne
+// change pas de couleur selon la largeur de l'écran. Le bleu est celui de la
+// charte (accent secondaire), pas une valeur écrite ici.
+.barre__lien--panier { color: var(--accent-secondaire); }
+
 .barre__compteur {
   position: absolute;
   top: -5px;
@@ -57,7 +62,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: var(--primaire);
+  background: var(--accent-secondaire);
   color: #fff;
   font-size: 9.5px;
   font-weight: 700;
@@ -197,6 +202,11 @@
 
   .bouton--actif { color: var(--primaire); }
 
+  // ⚠️ APRÈS la règle d'état, sinon celle-ci l'emporterait et le panier
+  //    redeviendrait violet au moment précis où l'on est dessus.
+  .bouton--panier,
+  .bouton--panier.bouton--actif { color: var(--accent-secondaire); }
+
   .bouton--texte {
     padding: 0 0.9rem;
     font-size: 0.875rem;
@@ -214,13 +224,19 @@
     align-items: center;
     justify-content: center;
     border-radius: 9999px;
-    background: var(--primaire);
+    background: var(--accent-secondaire);
     color: #fff;
     font-size: 9.5px;
     font-weight: 700;
   }
 
-  .entete__connexion { white-space: nowrap; }
+  // Deux boutons côte à côte — « Se connecter » et « S'inscrire ». Un libellé
+  // coupé sur deux lignes ferait grandir l'en-tête d'un coup.
+  .entete__connexion {
+    white-space: nowrap;
+    padding: 0 0.9rem;
+    min-height: 40px;
+  }
 }
 
 // =============================================================================
