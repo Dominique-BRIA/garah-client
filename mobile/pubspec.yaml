@@ -1,0 +1,65 @@
+name: garah_mobile
+description: "GARAH — la boutique, sur téléphone."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ⚠️ LA LISTE EST COURTE, ET C'EST VOULU.
+  #
+  #    Chaque paquet ajouté est du téléchargement à chaque passage de CI, une
+  #    chance de plus de casser à la montée de version de Flutter, et du poids
+  #    dans l'APK. Sur les téléphones visés — entrée de gamme, connexion
+  #    comptée — la taille de l'application n'est pas un détail d'ingénieur.
+  #
+  #    Tout ce qui peut s'écrire à la main s'écrit à la main : la navigation,
+  #    l'état (ValueNotifier suffit), le thème.
+
+  # Les appels à l'API. `dart:io` seul obligerait à réécrire l'encodage des
+  # réponses et le suivi des redirections.
+  http: ^1.5.0
+
+  # Le jeton de session doit survivre à la fermeture de l'application : sans
+  # cela, on se reconnecte à chaque ouverture — c'est-à-dire qu'on retape un
+  # mot de passe au clavier tactile.
+  shared_preferences: ^2.5.3
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # La police de la charte, partagée avec le web. Elle sera EMBARQUÉE et non
+  # chargée depuis Google Fonts : une application installée doit s'afficher
+  # correctement sans réseau, et le premier lancement se fait souvent en
+  # boutique, sur un forfait qu'on ne veut pas dépenser.
+  #
+  # ⚠️ Les fichiers ne sont pas encore dans le dépôt. Tant qu'ils manquent,
+  #    cette section reste commentée : la déclarer sans les fichiers fait
+  #    échouer le build, et le message d'erreur ne dit pas laquelle des deux
+  #    choses manque. En attendant, l'application prend la police du système —
+  #    lisible partout, simplement pas la nôtre.
+  #
+  # fonts:
+  #   - family: Outfit
+  #     fonts:
+  #       - asset: polices/Outfit-Regular.ttf
+  #       - asset: polices/Outfit-Medium.ttf
+  #         weight: 500
+  #       - asset: polices/Outfit-SemiBold.ttf
+  #         weight: 600
+  #       - asset: polices/Outfit-Bold.ttf
+  #         weight: 700
+  #       - asset: polices/Outfit-ExtraBold.ttf
+  #         weight: 800

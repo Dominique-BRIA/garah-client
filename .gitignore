@@ -23,7 +23,13 @@ mobile/.dart_tool/
 mobile/.flutter-plugins
 mobile/.flutter-plugins-dependencies
 mobile/.packages
-mobile/pubspec.lock
+
+# ⚠️ pubspec.lock EST VERSIONNE, contrairement au reflexe pris sur les
+#    bibliotheques : ceci est une APPLICATION. Le fichier fige les versions
+#    des dependances transitives, si bien que GitHub Actions construit
+#    exactement ce qui a ete teste ici. Sans lui, une montee de version d un
+#    paquet indirect casse la chaine un matin, sans qu aucun commit n ait
+#    bouge — et on cherche l erreur dans son propre code.
 mobile/android/.gradle/
 mobile/android/local.properties
 mobile/ios/Pods/

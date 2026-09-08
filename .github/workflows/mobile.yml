@@ -1,0 +1,106 @@
+# La chaîne de l'application mobile.
+#
+# 🎯 LE BUILD FLUTTER SE FAIT ICI, ET NULLE PART AILLEURS.
+#
+#    Le poste de développement ne compile pas l'APK : le SDK Android, ses
+#    images système et son cache Gradle pèsent plusieurs gigaoctets, et la
+#    connexion sur place se compte. L'analyse et les tests, eux, tournent en
+#    local — ils ne demandent que le SDK Flutter.
+#
+# ⚠️ L'ordre des étapes n'est pas décoratif : analyse, puis tests, puis build.
+#    Compiler d'abord ferait attendre huit minutes pour découvrir une faute de
+#    frappe que `flutter analyze` signale en dix secondes.
+
+name: Mobile
+
+on:
+  push:
+    branches: [main]
+    # Le web et la charte ne déclenchent rien ici : chaque passage inutile est
+    # du temps de machine et une notification de plus qu'on finit par ignorer.
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile.yml'
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile.yml'
+  # Le déclenchement à la main : pour produire un APK sans avoir à pousser un
+  # commit vide.
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  verifier:
+    name: Analyse et tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # ⚠️ Une version FIXE, pas « stable ». Sur « stable », une montée de
+          #    version de Flutter casse la chaîne un matin sans qu'aucun
+          #    commit n'ait bougé — et on cherche l'erreur dans son propre
+          #    code. La version se change ici, exprès, quand on l'a décidé.
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+
+      - name: Dépendances
+        run: flutter pub get
+
+      - name: Format
+        # `--set-exit-if-changed` : sinon la commande reformate en silence et
+        # rend 0, ce qui ne vérifie rien du tout.
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyse
+        run: flutter analyze --fatal-infos
+
+      - name: Tests
+        run: flutter test
+
+  construire:
+    name: APK
+    needs: verifier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+
+      - name: Dépendances
+        run: flutter pub get
+
+      - name: Construire l'APK
+        # L'adresse de l'API se passe au build : l'écrire en dur obligerait à
+        # modifier le code pour changer d'environnement.
+        #
+        # ⚠️ `--split-per-abi` produit un APK par architecture au lieu d'un
+        #    seul qui les contient toutes. Sur les téléphones visés, l'APK
+        #    unique pèse près du triple — et ça se télécharge sur un forfait
+        #    qui se compte.
+        run: >
+          flutter build apk --release --split-per-abi
+          --dart-define=GARAH_API=${{ vars.GARAH_API || 'https://garah-api-anfeapebbth7h7an.francecentral-01.azurewebsites.net' }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: garah-apk
+          path: mobile/build/app/outputs/flutter-apk/*.apk
+          # Trente jours : au-delà, on reconstruit depuis le commit, qui est la
+          # seule source qui ne périme pas.
+          retention-days: 30
