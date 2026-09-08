@@ -104,3 +104,25 @@
 }
 
 .liens { padding: 0 1.25rem 1.5rem; }
+
+// Le bloc des notifications : une carte comme les autres, et le meme
+// espacement — il n a pas a se distinguer du reste des reglages.
+.alertes {
+  margin: 1.25rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.alertes__etat {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--texte-attenue);
+}
+
+@media (min-width: 900px) {
+  .alertes { margin-left: 0; margin-right: 0; max-width: 34rem; }
+}

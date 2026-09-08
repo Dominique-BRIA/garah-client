@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { ServiceNotifications } from '../../services/notifications';
 import { ServiceSession } from '../../services/session';
 import { MenuCompte } from './menu-compte';
 
@@ -37,6 +38,15 @@ interface MonProfil {
   styleUrl: './profil.scss',
 })
 export class Profil {
+  protected readonly notifications = inject(ServiceNotifications);
+
+  /** Ce qui a empêché l'activation, dit à l'écran. */
+  protected readonly echecAlertes = signal<string | null>(null);
+
+  protected async activerLesAlertes(): Promise<void> {
+    this.echecAlertes.set(await this.notifications.activer());
+  }
+
   private readonly http = inject(HttpClient);
   protected readonly session = inject(ServiceSession);
 

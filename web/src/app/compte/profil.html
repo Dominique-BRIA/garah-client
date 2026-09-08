@@ -163,6 +163,54 @@
   </div>
 }
 
+<!-- ================================================================== -->
+<!-- LES NOTIFICATIONS                                                   -->
+<!-- ================================================================== -->
+<!-- 🎯 Elles s'activent SUR UN GESTE, jamais au chargement. Une demande
+     qui surgit avant qu'on ait rien fait est refusée la plupart du temps
+     — et un refus est DÉFINITIF : le navigateur ne repose plus la
+     question, et personne ne va la débloquer dans ses réglages. -->
+<section class="gb-carte alertes">
+  <p class="gb-libelle">Être prévenu</p>
+
+  @switch (notifications.etat()) {
+    @case ('actif') {
+      <p class="alertes__etat">
+        Vous serez prévenu quand votre marchandise arrive, et quand un
+        conseiller vous répond.
+      </p>
+    }
+    @case ('refuse') {
+      <!-- On DIT que c'est définitif côté navigateur, et où le défaire.
+           Laisser un bouton qui ne redemandera jamais rien ferait cliquer
+           trois fois avant qu'on renonce. -->
+      <p class="alertes__etat">
+        Les notifications sont bloquées pour ce site. Vous pouvez les
+        rouvrir dans les réglages de votre navigateur, à la ligne de GARAH.
+      </p>
+    }
+    @case ('indisponible') {
+      <p class="alertes__etat">
+        Ce navigateur ne gère pas les notifications.
+      </p>
+    }
+    @default {
+      <p class="alertes__etat">
+        Trois choses seulement : votre marchandise est arrivée, un
+        conseiller vous a répondu, un prix vous est proposé.
+      </p>
+      <button type="button" class="gb-btn gb-btn--secondaire"
+              [disabled]="notifications.occupe()" (click)="activerLesAlertes()">
+        @if (notifications.occupe()) { Activation… } @else { Activer les notifications }
+      </button>
+    }
+  }
+
+  @if (echecAlertes(); as m) {
+    <p class="gb-alerte">{{ m }}</p>
+  }
+</section>
+
 <div class="liens">
   <a routerLink="/mes-commandes" class="gb-btn gb-btn--secondaire gb-btn--plein">
     Mes commandes
