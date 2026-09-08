@@ -16,6 +16,23 @@
  *
  * ⚠️ Les donnees restent celles de PRODUCTION. Une commande passee ici est une
  *    vraie commande.
+ *
+ * ⚠️ CE FICHIER NE DOIT JAMAIS PARTIR EN PRODUCTION.
+ *
+ *    C'est `angular.json`, par le `fileReplacements` de sa configuration
+ *    `production`, qui le remplace par `environment.production.ts`. Sans cette
+ *    ligne, la boutique deployee garde `urlApi: ''` : les requetes partent en
+ *    RELATIF vers son propre domaine, la reecriture SPA les renvoie vers
+ *    index.html, et l'application recoit du HTML la ou elle attend du JSON.
+ *
+ *    Le symptome est trompeur au possible : aucune erreur reseau, aucun refus
+ *    CORS, juste des ecrans vides. On cherche du cote des origines autorisees
+ *    pendant que la boutique n'a JAMAIS appele l'API. C'est arrive.
+ *
+ *    Pour verifier apres un `ng build`, le paquet livre DOIT contenir
+ *    l'adresse d'Azure :
+ *
+ *        grep -c garah-api dist/garah-boutique/browser/main-*.js
  */
 export const environnement = {
   production: false,
