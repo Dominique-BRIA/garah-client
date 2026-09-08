@@ -1,7 +1,21 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Component, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { messageErreur } from '../../api/erreurs';
+
+/**
+ * ⚠️ DIX, et c'est le serveur qui décide.
+ *
+ * <p>L'écran acceptait huit caractères là où l'API en exige dix. Le visiteur
+ * remplissait tout, cliquait, et recevait « Certains champs sont invalides » —
+ * une phrase qui ne dit ni lequel ni pourquoi. Beaucoup s'arrêtaient là.</p>
+ *
+ * <p>Une constante nommée plutôt qu'un 10 posé dans le code : la valeur
+ * apparaît à trois endroits de cet écran, et trois 8 recopiés sont exactement
+ * ce qui a produit le défaut.</p>
+ */
+const LONGUEUR_MOT_DE_PASSE_MIN = 10;
 
 /**
  * La création de compte.
@@ -61,10 +75,14 @@ import { RouterLink } from '@angular/router';
         <input id="mdp" name="motDePasse" type="password" class="gb-champ" required
                autocomplete="new-password"
                [ngModel]="motDePasse()" (ngModelChange)="motDePasse.set($event)" />
-        <p class="aide">Au moins 8 caractères.</p>
+        <p class="aide">Au moins 10 caractères. Une phrase vaut mieux qu’un mot compliqué.</p>
 
         @if (erreur(); as m) {
           <p class="gb-alerte" role="alert">{{ m }}</p>
+        } @else if (manque(); as m) {
+          <!-- 🎯 Ce qui manque, DIT AVANT le clic. Un bouton grisé sans
+               explication fait chercher la panne dans la connexion. -->
+          <p class="manque">{{ m }}</p>
         }
 
         <button type="submit" class="gb-btn gb-btn--primaire gb-btn--plein"
@@ -90,6 +108,11 @@ import { RouterLink } from '@angular/router';
     .formulaire .gb-alerte { margin-top: 1rem; }
 
     .aide { margin: 0.3rem 0 0; font-size: 0.75rem; color: var(--texte-attenue); }
+
+    /* Ce qui manque est de l'AIDE, pas une erreur : ambre et non rouge. Le
+       rouge dit « vous avez fait une faute » à quelqu'un qui est simplement en
+       train de remplir le formulaire. */
+    .manque { margin: 1rem 0 0; font-size: 0.8rem; color: var(--alerte); }
 
     .bascule {
       padding: 1.25rem;
@@ -135,8 +158,31 @@ export class Inscription {
     return (
       this.nom().trim().length > 0 &&
       this.email().trim().length > 0 &&
-      this.motDePasse().length >= 8
+      this.motDePasse().length >= LONGUEUR_MOT_DE_PASSE_MIN
     );
+  }
+
+  /**
+   * Ce qui manque encore, en une phrase.
+   *
+   * <p>🎯 Dire ce qui manque AVANT le clic. Un bouton grisé sans raison fait
+   * chercher la panne ailleurs — souvent dans la connexion.</p>
+   */
+  protected manque(): string | null {
+    if (this.nom().trim().length === 0) {
+      return 'Votre nom est nécessaire.';
+    }
+    if (!this.email().includes('@')) {
+      return 'Entrez une adresse e-mail valide.';
+    }
+    if (this.motDePasse().length > 0
+        && this.motDePasse().length < LONGUEUR_MOT_DE_PASSE_MIN) {
+      return `Il manque ${LONGUEUR_MOT_DE_PASSE_MIN - this.motDePasse().length} caractère(s) au mot de passe.`;
+    }
+    if (this.motDePasse().length === 0) {
+      return 'Choisissez un mot de passe.';
+    }
+    return null;
   }
 
   protected valider(): void {
@@ -160,21 +206,9 @@ export class Inscription {
         },
         error: (e: unknown) => {
           this.envoi.set(false);
-          this.erreur.set(message(e));
+          this.erreur.set(messageErreur(e, 'Le compte n’a pas pu être créé.'));
         },
       });
   }
 }
 
-function message(e: unknown): string {
-  if (e instanceof HttpErrorResponse) {
-    if (e.status === 0) {
-      return 'Pas de connexion. Réessayez dans un instant.';
-    }
-    const corps = e.error as { message?: string } | null;
-    if (corps?.message) {
-      return corps.message;
-    }
-  }
-  return 'Le compte n’a pas pu être créé.';
-}

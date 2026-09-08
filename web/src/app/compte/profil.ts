@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ServiceNotifications } from '../../services/notifications';
 import { ServiceSession } from '../../services/session';
 import { MenuCompte } from './menu-compte';
+import { messageErreur } from '../../api/erreurs';
 
 interface MonProfil {
   readonly id: number;
@@ -131,7 +132,7 @@ export class Profil {
         },
         error: (e: unknown) => {
           this.envoi.set(false);
-          this.erreur.set(message(e, 'Vos coordonnées n’ont pas pu être enregistrées.'));
+          this.erreur.set(messageErreur(e, 'Vos coordonnées n’ont pas pu être enregistrées.'));
         },
       });
   }
@@ -180,7 +181,7 @@ export class Profil {
         error: (e: unknown) => {
           this.envoiMotDePasse.set(false);
           this.erreurMotDePasse.set(
-            message(e, 'Le mot de passe n’a pas pu être changé.'),
+            messageErreur(e, 'Le mot de passe n’a pas pu être changé.'),
           );
         },
       });
@@ -193,15 +194,3 @@ export class Profil {
   }
 }
 
-function message(e: unknown, repli: string): string {
-  if (e instanceof HttpErrorResponse) {
-    if (e.status === 0) {
-      return 'Pas de connexion. Réessayez dans un instant.';
-    }
-    const corps = e.error as { message?: string } | null;
-    if (corps?.message) {
-      return corps.message;
-    }
-  }
-  return repli;
-}

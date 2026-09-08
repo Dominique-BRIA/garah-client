@@ -1,8 +1,9 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Component, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { montantLisible } from '../../modeles/catalogue';
+import { messageErreur } from '../../api/erreurs';
 
 interface EtatPaiement {
   readonly id: number;
@@ -215,7 +216,7 @@ export class Paiement {
         },
         error: (e: unknown) => {
           this.envoi.set(false);
-          this.erreur.set(message(e));
+          this.erreur.set(messageErreur(e, 'Le paiement n’a pas pu être lancé.'));
         },
       });
   }
@@ -247,7 +248,7 @@ export class Paiement {
       },
       error: (e: unknown) => {
         this.verification.set(false);
-        this.erreur.set(message(e));
+        this.erreur.set(messageErreur(e, 'Le paiement n’a pas pu être lancé.'));
       },
     });
   }
@@ -257,15 +258,3 @@ export class Paiement {
   }
 }
 
-function message(e: unknown): string {
-  if (e instanceof HttpErrorResponse) {
-    if (e.status === 0) {
-      return 'Pas de connexion. Votre commande est conservée : réessayez.';
-    }
-    const corps = e.error as { message?: string } | null;
-    if (corps?.message) {
-      return corps.message;
-    }
-  }
-  return 'Le paiement n’a pas pu être lancé.';
-}

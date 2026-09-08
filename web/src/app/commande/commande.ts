@@ -1,8 +1,9 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { montantLisible } from '../../modeles/catalogue';
+import { messageErreur } from '../../api/erreurs';
 
 /** Un point de récupération, tel que la route publique le rend. */
 interface PointRecuperation {
@@ -274,7 +275,7 @@ export class Commande {
         },
         error: (e: unknown) => {
           this.envoi.set(false);
-          this.erreur.set(message(e));
+          this.erreur.set(messageErreur(e, 'La commande n’a pas pu être créée.'));
         },
       });
   }
@@ -284,15 +285,3 @@ export class Commande {
   }
 }
 
-function message(e: unknown): string {
-  if (e instanceof HttpErrorResponse) {
-    if (e.status === 0) {
-      return 'Pas de connexion. Réessayez dans un instant.';
-    }
-    const corps = e.error as { message?: string } | null;
-    if (corps?.message) {
-      return corps.message;
-    }
-  }
-  return 'La commande n’a pas pu être créée.';
-}
