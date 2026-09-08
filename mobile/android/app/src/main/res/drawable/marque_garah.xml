@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  LA CALEBASSE — le logo GARAH, recopié à l'identique.
+
+  ⚠️ Les tracés viennent de `web/src/app/marque.ts`, sans une virgule de
+     changement : c'est la MÊME marque sur les trois applications. En redessiner
+     une version « qui rend mieux en petit » donnerait deux logos, et personne
+     ne saurait lequel est le bon.
+
+  ⚠️ La couleur est écrite EN DUR ici, et c'est l'exception assumée.
+
+     Ce fichier est lu par Android AVANT que Flutter ne démarre : ni Dart, ni
+     les jetons de la charte n'existent encore. C'est le seul endroit du projet
+     où `#12A594` s'écrit à la main — et il doit rester égal à
+     `constantes.marque` de `charte/jetons.json`. Le vert de la marque ne change
+     ni avec le thème, ni avec l'application : c'est justement ce qui en fait
+     une marque.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- L'anse : un arc ouvert, tracé et non rempli. -->
+    <path
+        android:pathData="M10,25A15,15 0 0 1 37.29,16.4"
+        android:strokeColor="#12A594"
+        android:strokeWidth="5"
+        android:strokeLineCap="butt" />
+
+    <!-- La panse : le demi-disque plein. -->
+    <path
+        android:pathData="M10,25A15,15 0 0 0 40,25Z"
+        android:fillColor="#12A594" />
+</vector>

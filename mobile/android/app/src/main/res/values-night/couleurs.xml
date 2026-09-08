@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Le même fond, en sombre — `sombre.fond` de charte/jetons.json.
+
+  ⚠️ Sans ce fichier, un téléphone réglé en sombre ouvre GARAH sur un fond
+     blanc éclatant pendant une seconde, puis bascule. En pleine nuit, c'est
+     le genre de détail qu'on ne pardonne pas.
+-->
+<resources>
+    <color name="fond_ouverture">#0C0C14</color>
+</resources>

@@ -1,12 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
+<!--
+  L'ÉCRAN D'OUVERTURE.
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+  🎯 Il s'affiche AVANT que Flutter ne démarre. C'est tout son rôle : sur un
+     téléphone d'entrée de gamme, le moteur met une à deux secondes à poser sa
+     première image, et sans cet écran on regarde un rectangle blanc — ou noir —
+     sans savoir si l'application s'ouvre ou si elle a planté.
+
+    Le LOGO y est, et non le nom : à cette taille et pendant ce temps-là, une
+  forme se reconnaît, un mot se lit. C'est la même calebasse que partout
+  ailleurs.
+
+  ⚠️ La couleur de fond est celle de la charte, écrite en dur faute de mieux :
+     Android lit ce fichier avant que Dart n'existe. Elle doit rester égale à
+     `clair.fond` / `sombre.fond` de charte/jetons.json.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/fond_ouverture" />
+
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/marque_garah" />
+    </item>
 </layer-list>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ⚠️ Doit rester égal à `clair.fond` de charte/jetons.json. Android lit ce
+     fichier avant que Dart n'existe : c'est la seule raison pour laquelle la
+     valeur est recopiée ici plutôt qu'engendrée.
+-->
+<resources>
+    <color name="fond_ouverture">#F8FAFC</color>
+</resources>

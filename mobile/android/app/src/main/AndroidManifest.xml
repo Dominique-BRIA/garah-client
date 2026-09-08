@@ -1,6 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      ⚠️ SANS CETTE LIGNE, L APK DE PRODUCTION N A AUCUN ACCES RESEAU.
+
+         Flutter ne declare INTERNET que dans les manifestes de DEBUG et de
+         PROFIL, parce que son outillage en a besoin pour le rechargement a
+         chaud. En release, il disparait — et l application se lance, s affiche,
+         puis echoue sur chaque appel sans jamais dire pourquoi : ce n est pas
+         une erreur reseau du telephone, c est Android qui refuse la socket.
+
+         Le symptome trompe : en developpement tout marche, et seul l APK
+         installe est muet.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="garah_mobile"
+        android:label="GARAH"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

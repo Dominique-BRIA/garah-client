@@ -156,11 +156,36 @@ abstract final class ThemeGarah {
         ),
       ),
 
+      // ⚠️ L'ONGLET ACTIF EST VERT, sur une pastille verte très pâle.
+      //
+      //    Le défaut de Material 3 posait une pastille pleine dans la couleur
+      //    du conteneur, avec une icône BLANCHE dessus : sur un onglet
+      //    sélectionné, on ne voyait plus l'icône, seulement une tache. C'est
+      //    l'inverse de ce qu'une barre de navigation doit faire — dire OÙ l'on
+      //    est sans effacer ce qu'on regarde.
+      //
+      //    Le vert est celui de la marque, le même que le GAR de l'accueil et
+      //    que la calebasse : c'est la couleur qui dit « GARAH », et l'endroit
+      //    où l'on se trouve dans GARAH est un bon endroit pour la poser.
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface,
-        indicatorColor: Jetons.primaire.withValues(alpha: 0.14),
+        indicatorColor: Jetons.marque.withValues(alpha: 0.14),
+        // Un rectangle bien arrondi plutôt que la gélule par défaut : il
+        // couvre l'icône ET le libellé, ce qui donne la sensation d'une touche
+        // survolée plutôt que d'une bulle posée derrière un dessin.
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+        ),
         elevation: 0,
-        height: 64,
+        height: 66,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (etats) => IconThemeData(
+            size: 23,
+            color: etats.contains(WidgetState.selected)
+                ? Jetons.marque
+                : texteAttenue,
+          ),
+        ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (etats) => TextStyle(
             fontSize: 11,
@@ -168,7 +193,7 @@ abstract final class ThemeGarah {
                 ? FontWeight.w700
                 : FontWeight.w500,
             color: etats.contains(WidgetState.selected)
-                ? Jetons.primaire
+                ? Jetons.marque
                 : texteAttenue,
           ),
         ),

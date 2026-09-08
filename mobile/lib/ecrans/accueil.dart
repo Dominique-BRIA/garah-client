@@ -128,9 +128,36 @@ class _EcranAccueilState extends State<EcranAccueil> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'GARAH',
-          style: TextStyle(letterSpacing: 2.5, fontWeight: FontWeight.w800),
+        // ⚠️ Le nom est COUPÉ EN DEUX, et ce n'est pas un effet : le vert est
+        //    celui de la marque — la calebasse, l'onglet actif, l'écran
+        //    d'ouverture — et le violet celui de l'accent du thème sombre du
+        //    back-office. Les deux applications de la maison se reconnaissent
+        //    à ces deux couleurs-là.
+        //
+        //    Les deux valeurs viennent des jetons : les écrire à la main ici
+        //    ferait diverger la vitrine du reste au premier ajustement.
+        titleSpacing: 16,
+        title: const Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: 'GAR',
+                style: TextStyle(color: Jetons.marque),
+              ),
+              TextSpan(
+                text: 'AH',
+                style: TextStyle(color: Jetons.accent),
+              ),
+            ],
+          ),
+          style: TextStyle(
+            // 26 au lieu de 18 : c'est le nom de la boutique, pas un titre
+            // d'écran. Il n'y a rien au-dessus de lui.
+            fontSize: 26,
+            letterSpacing: 3,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+          ),
         ),
         actions: [
           ListenableBuilder(
@@ -149,6 +176,7 @@ class _EcranAccueilState extends State<EcranAccueil> {
             ),
           ),
         ],
+        toolbarHeight: 68,
       ),
       body: RefreshIndicator(
         onRefresh: _charger,
