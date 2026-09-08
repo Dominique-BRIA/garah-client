@@ -86,6 +86,21 @@ export const routes: Routes = [
     canActivate: [gardeSession],
     loadComponent: () => import('./compte/mes-commandes').then((m) => m.MesCommandes),
   },
+  /**
+   * Le detail d'une commande.
+   *
+   * ⚠️ L'URL porte l'IDENTIFIANT, jamais le code de retrait. Le code est un
+   *    secret partage : dans une URL il finirait dans les journaux du
+   *    serveur, l'historique du navigateur et l'en-tete Referer du
+   *    premier lien clique. Le numero de SUIVI, lui, a sa place dans une
+   *    URL — il se partage, c'est son role.
+   */
+  {
+    path: 'mes-commandes/:id',
+    canActivate: [gardeSession],
+    loadComponent: () =>
+      import('./compte/detail-commande').then((m) => m.DetailCommandeEcran),
+  },
   {
     path: 'profil',
     canActivate: [gardeSession],

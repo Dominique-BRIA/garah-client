@@ -86,6 +86,19 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
                 Reprendre le paiement
               </a>
             }
+
+            <!-- ⚠️ Un LIEN, et non la carte entière rendue cliquable : elle
+                 contient déjà « Reprendre le paiement », et deux liens
+                 imbriqués ne sont pas du HTML valide — le navigateur en perd
+                 un, et lequel dépend de lui. -->
+            <a [routerLink]="['/mes-commandes', c.id]" class="commande__lien">
+              Voir le détail
+              @if (c.statut === 'DISPONIBLE') {
+                <!-- Ce qui donne envie d'ouvrir : le code de retrait est là,
+                     et nulle part ailleurs. -->
+                <span class="commande__appel">et le code de retrait</span>
+              }
+            </a>
           </article>
         }
       </div>
@@ -124,6 +137,27 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
     .commande__detail { margin: 0.2rem 0 0; font-size: 0.78rem; color: var(--texte-attenue); }
 
     .commande__mention { margin: 0; font-size: 0.8rem; color: var(--texte-attenue); line-height: 1.5; }
+
+    .commande__lien {
+      /* 44 px, comme partout : un lien de carte se rate autant qu'un bouton. */
+      min-height: var(--cible-tactile-min);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      align-self: flex-start;
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--primaire);
+      text-decoration: none;
+
+      &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+    }
+
+    .commande__appel { color: var(--succes); font-weight: 700; }
+
+    @media (hover: hover) {
+      .commande__lien:hover { text-decoration: underline; }
+    }
 
     .recours {
       padding: 1.5rem 1.25rem;
