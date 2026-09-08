@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -44,10 +44,22 @@ export class Catalogue {
   protected readonly filtre = signal('');
 
   constructor() {
-    queueMicrotask(() => {
-      this.saisie.set(this.recherche() ?? '');
-      this.filtre.set(this.recherche() ?? '');
-      this.charger(true);
+    // ⚠️ Un EFFET, pas un chargement unique au démarrage.
+    //
+    //    Depuis l'en-tête, on peut relancer une recherche alors qu'on est DÉJÀ
+    //    sur le catalogue : le routeur ne recrée alors pas l'écran, il change
+    //    seulement le paramètre. Un chargement écrit dans le constructeur ne
+    //    serait jamais rejoué, et la page resterait sur l'ancien résultat
+    //    pendant que la barre d'adresse affiche le nouveau terme.
+    effect(() => {
+      const terme = this.recherche() ?? '';
+      this.categorieId();
+
+      untracked(() => {
+        this.saisie.set(terme);
+        this.filtre.set(terme);
+        this.charger(true);
+      });
     });
   }
 
@@ -65,11 +77,16 @@ export class Catalogue {
     if (this.categorieId()) {
       parametres.set('categorieId', this.categorieId()!);
     }
+    // 🎯 La recherche part au SERVEUR. Filtrer la page reçue ne trouverait pas
+    //    ce qui est en page deux, et le visiteur en conclurait que l'article
+    //    n'existe pas.
+    if (this.filtre()) {
+      parametres.set('recherche', this.filtre());
+    }
 
     this.http.get<Page<ResumeProduit>>(`/api/produits?${parametres}`).subscribe({
       next: (p) => {
-        const recus = this.filtrer(p.content);
-        this.produits.update((deja) => (remiseAZero ? recus : [...deja, ...recus]));
+        this.produits.update((deja) => (remiseAZero ? p.content : [...deja, ...p.content]));
         this.total.set(p.page.totalElements);
         this.derniere.set(p.page.number >= p.page.totalPages - 1);
         this.chargement.set(false);
@@ -85,28 +102,6 @@ export class Catalogue {
         );
       },
     });
-  }
-
-  /**
-   * ⚠️ Le filtrage textuel a lieu ICI, faute de recherche côté serveur sur
-   *    cette route.
-   *
-   *    Conséquence à connaître : il ne porte que sur la page reçue. Un article
-   *    de la page suivante ne remontera pas. C'est acceptable tant que le
-   *    catalogue est petit ; le jour où il grandit, la recherche doit passer
-   *    au serveur — pas s'améliorer ici.
-   */
-  private filtrer(recus: ResumeProduit[]): ResumeProduit[] {
-    const q = this.filtre().trim().toLowerCase();
-    if (!q) {
-      return recus;
-    }
-    return recus.filter(
-      (p) =>
-        p.nom.toLowerCase().includes(q) ||
-        (p.marchandNom ?? '').toLowerCase().includes(q) ||
-        (p.categorieNom ?? '').toLowerCase().includes(q),
-    );
   }
 
   protected chercher(): void {

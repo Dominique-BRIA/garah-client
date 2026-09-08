@@ -1,0 +1,106 @@
+.entete {
+  padding: 1.5rem 1.25rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h1 { margin: 0; font-size: 1.3rem; font-weight: 700; }
+}
+
+.confirmation {
+  margin: 0 1.25rem 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--rayon-petit);
+  background: color-mix(in srgb, var(--succes) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--succes) 25%, transparent);
+  color: var(--succes);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.bloc {
+  padding: 0 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  .gb-libelle:not(:first-child) { margin-top: 0.9rem; }
+}
+
+.bloc__entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+
+  .gb-libelle { margin: 0; }
+}
+
+// Un lien-bouton : le geste mène à un formulaire, pas à une autre page, donc
+// pas d'ancre — mais l'apparence reste discrète, ce n'est pas l'action
+// principale de l'écran.
+.lien {
+  padding: 0.2rem 0;
+  border: none;
+  background: transparent;
+  color: var(--primaire);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+}
+
+.infos {
+  margin: 0.3rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+
+  dt {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texte-attenue);
+    margin-bottom: 0.2rem;
+  }
+
+  dd { margin: 0; font-size: 0.9rem; overflow-wrap: anywhere; }
+}
+
+.non-verifie {
+  margin-left: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--alerte);
+}
+
+.avertissement {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--rayon-petit);
+  background: color-mix(in srgb, var(--alerte) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--alerte) 25%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.aide {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--texte-attenue);
+  line-height: 1.5;
+}
+
+.aide--attention { color: var(--alerte); font-weight: 600; }
+
+.boutons {
+  margin-top: 1.2rem;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.liens { padding: 0 1.25rem 1.5rem; }

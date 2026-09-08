@@ -1,0 +1,177 @@
+<!-- ===================================================================== -->
+<!-- L'en-tête : écrans larges seulement                                    -->
+<!-- ===================================================================== -->
+<header class="entete">
+  <div class="entete__interieur">
+    <a routerLink="/" class="marque" aria-label="Accueil GARAH">
+      <gb-marque />
+      <span>GARAH</span>
+    </a>
+
+    <nav class="liens" aria-label="Navigation">
+      <a routerLink="/catalogue" routerLinkActive="liens__lien--actif" class="liens__lien">
+        Catalogue
+      </a>
+      <a routerLink="/suivi" routerLinkActive="liens__lien--actif" class="liens__lien">
+        Suivre un colis
+      </a>
+    </nav>
+
+    <!-- La recherche, disponible depuis N'IMPORTE QUELLE page. Sans elle, il
+         faut revenir à l'accueil ou au catalogue pour chercher autre chose —
+         un aller-retour de plus sur chaque envie. -->
+    <form class="quete" (ngSubmit)="chercher()" role="search" novalidate>
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="quete__loupe">
+        <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+        <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+      </svg>
+      <input type="search" name="quete" class="gb-champ quete__champ"
+             placeholder="Chercher un article…" aria-label="Chercher un article"
+             [ngModel]="saisie()" (ngModelChange)="saisie.set($event)" />
+    </form>
+
+    <div class="entete__actions">
+      <a routerLink="/panier" routerLinkActive="bouton--actif" class="bouton" aria-label="Mon panier">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 5h2l2.2 9.5a2 2 0 0 0 2 1.5h6.4a2 2 0 0 0 2-1.5L20 8H7"
+                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        @if (panier.nombreArticles(); as n) {
+          <span class="bouton__compteur">{{ n }}</span>
+        }
+      </a>
+
+      @if (session.connecte()) {
+        <a routerLink="/mes-commandes" routerLinkActive="bouton--actif" class="bouton bouton--texte">
+          {{ session.nom() ?? 'Mon compte' }}
+        </a>
+      } @else {
+        <a routerLink="/connexion" class="gb-btn gb-btn--secondaire entete__connexion">Se connecter</a>
+      }
+
+      <!-- La bascule de thème, tout au bout à droite : c'est un réglage
+           d'affichage, pas une destination. La placer avant le panier ou la
+           connexion la mettrait au même rang qu'eux.
+
+           Le libellé dit ce qu'on OBTIENT en cliquant, pas l'état actuel :
+           « Thème sombre » sur un fond clair. L'inverse fait hésiter une fois
+           sur deux. -->
+      <button type="button" class="bouton" (click)="theme.basculer()"
+              [attr.aria-label]="theme.sombre() ? 'Passer au thème clair' : 'Passer au thème sombre'"
+              [title]="theme.sombre() ? 'Thème clair' : 'Thème sombre'">
+        @if (theme.sombre()) {
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7" />
+            <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"
+                  stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"
+                  stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+          </svg>
+        }
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="gb-page">
+  <main class="corps">
+    <router-outlet />
+  </main>
+</div>
+
+<!-- ===================================================================== -->
+<!-- Le bas de page                                                         -->
+<!-- ===================================================================== -->
+<!-- Il répond aux questions qu'on se pose AVANT d'acheter chez un inconnu :
+     qui vend, comment on récupère, comment on paie. Un visiteur arrivé par un
+     lien partagé n'a aucune de ces réponses. -->
+<footer class="pied">
+  <div class="pied__interieur">
+    <div class="pied__marque">
+      <gb-marque />
+      <div>
+        <p class="pied__nom">GARAH</p>
+        <p class="pied__phrase">
+          Commandez à Douala, retirez à Bangui. Vous choisissez votre point de
+          récupération, et vous repartez avec un code.
+        </p>
+      </div>
+    </div>
+
+    <nav class="pied__colonnes" aria-label="Liens de bas de page">
+      <div class="pied__colonne">
+        <p class="pied__titre">La boutique</p>
+        <a routerLink="/catalogue">Catalogue</a>
+        <a routerLink="/panier">Mon panier</a>
+      </div>
+
+      <div class="pied__colonne">
+        <p class="pied__titre">Ma commande</p>
+        <!-- Le suivi est PUBLIC : il mérite d'être ici, où le cherche
+             quelqu'un qui n'a pas de compte. -->
+        <a routerLink="/suivi">Suivre un colis</a>
+        @if (session.connecte()) {
+          <a routerLink="/mes-commandes">Mes commandes</a>
+        } @else {
+          <a routerLink="/connexion">Se connecter</a>
+        }
+      </div>
+
+      <div class="pied__colonne">
+        <p class="pied__titre">Paiement</p>
+        <!-- Des faits, pas une promesse commerciale : ce sont les deux moyens
+             que l'application accepte réellement. -->
+        <span class="pied__fait">MTN MoMo</span>
+        <span class="pied__fait">Orange Money</span>
+      </div>
+    </nav>
+  </div>
+
+  <p class="pied__bas">GARAH — Douala · Bertoua · Bangui</p>
+</footer>
+
+<!-- ===================================================================== -->
+<!-- La barre du bas : téléphones seulement                                 -->
+<!-- ===================================================================== -->
+<nav class="barre" aria-label="Navigation principale">
+  <a routerLink="/" routerLinkActive="barre__lien--actif"
+     [routerLinkActiveOptions]="{ exact: true }" class="barre__lien">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="m4 11 8-6.5 8 6.5v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1v-8Z"
+            stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+    </svg>
+    <span>Accueil</span>
+  </a>
+
+  <a routerLink="/catalogue" routerLinkActive="barre__lien--actif" class="barre__lien">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7" />
+      <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+    </svg>
+    <span>Chercher</span>
+  </a>
+
+  <a routerLink="/panier" routerLinkActive="barre__lien--actif" class="barre__lien">
+    <span class="barre__pastille">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 5h2l2.2 9.5a2 2 0 0 0 2 1.5h6.4a2 2 0 0 0 2-1.5L20 8H7"
+              stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      @if (panier.nombreArticles(); as n) {
+        <span class="barre__compteur" [attr.aria-label]="n + ' article(s) au panier'">{{ n }}</span>
+      }
+    </span>
+    <span>Panier</span>
+  </a>
+
+  <a routerLink="/mes-commandes" routerLinkActive="barre__lien--actif" class="barre__lien">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.7" />
+      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+    </svg>
+    <span>Compte</span>
+  </a>
+</nav>

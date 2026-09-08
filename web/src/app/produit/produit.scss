@@ -8,6 +8,101 @@
   flex-wrap: wrap;
 }
 
+// --- Le fil d'Ariane ---------------------------------------------------------
+// Au téléphone il passe SOUS la photo pleine largeur : en haut, il volerait la
+// première hauteur d'écran à l'article lui-même. Sur un écran large il reprend
+// sa place habituelle, tout en haut.
+// ⚠️ Au téléphone, PAS de fil d'Ariane : la photo occupe la première hauteur
+//    d'écran et porte déjà sa flèche de retour. Un fil au-dessus repousserait
+//    l'article sous la ligne de flottaison pour répéter ce que la flèche dit.
+.fil {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.9rem 1.25rem 0;
+  font-size: 0.78rem;
+  color: var(--texte-attenue);
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+  }
+}
+
+// Le nom de l'article est long : on le coupe plutôt que d'imposer un défilement
+// horizontal à toute la page.
+.fil__ici {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14rem;
+  color: var(--texte);
+}
+
+// --- Les miniatures ----------------------------------------------------------
+.miniatures {
+  display: flex;
+  gap: 0.55rem;
+  padding: 0.75rem 1.25rem 0;
+  overflow-x: auto;
+  // Sur un téléphone, la rangée déborde : on la fait défiler d'un doigt, sans
+  // ascenseur visible qui mangerait la hauteur.
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.miniature {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--rayon-petit);
+  background: var(--surface-douce);
+  overflow: hidden;
+  cursor: pointer;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+}
+
+.miniature--active { border-color: var(--primaire); }
+
+// --- Le partage --------------------------------------------------------------
+.titre__ligne {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+
+  h1 { flex: 1; min-width: 0; }
+}
+
+.partage {
+  flex: 0 0 auto;
+  width: var(--cible-tactile-min);
+  height: var(--cible-tactile-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--verre-bordure);
+  border-radius: var(--rayon-petit);
+  background: transparent;
+  color: var(--texte-attenue);
+  cursor: pointer;
+
+  svg { width: 19px; height: 19px; }
+  &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+}
+
+.partage__fait {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--succes);
+}
+
 // --- La photo ----------------------------------------------------------------
 .photo {
   position: relative;
@@ -298,3 +393,116 @@
   flex: 1.35 1 0;
   min-height: 50px;
 }
+
+// =============================================================================
+// Ecrans larges : deux colonnes
+// =============================================================================
+// La photo a gauche, tout ce qui decide l'achat a droite — grille de paliers,
+// declinaisons, quantite, boutons. Sur un ecran large, empiler ces blocs
+// obligerait a faire defiler pour comparer un prix et une taille qui tiennent
+// pourtant cote a cote.
+@media (min-width: 900px) {
+  :host {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'fil   fil'
+      'photo titre'
+      'photo achat'
+      'photo achat';
+    align-items: start;
+    column-gap: 2.5rem;
+    padding: 2rem 0 3rem;
+  }
+
+  // La colonne de gauche entière colle : photo ET miniatures. Ne faire coller
+  // que la photo laisserait les miniatures filer vers le haut au défilement.
+  .visuel {
+    grid-area: photo;
+    position: sticky;
+    // Sous l'entête collant de la coque, sinon la photo passe dessous.
+    top: 88px;
+  }
+
+  .photo {
+    border-radius: var(--rayon-grand);
+    overflow: hidden;
+    aspect-ratio: 1;
+  }
+
+  .photo__retour { display: none; }
+
+  .fil {
+    display: flex;
+    grid-area: fil;
+    padding: 0 0 1rem;
+  }
+
+  .fil__ici { max-width: 22rem; }
+
+  // Les miniatures restent sous la photo, dans la colonne de gauche.
+  .miniatures {
+    padding: 0.75rem 0 0;
+    overflow-x: visible;
+    flex-wrap: wrap;
+  }
+
+  .miniature { width: 64px; height: 64px; }
+
+  .titre { grid-area: titre; padding: 0; }
+  .titre h1 { font-size: 1.75rem; }
+
+  // Tout le reste va dans la colonne de droite, dans l'ordre du document.
+  .paliers,
+  .indisponible,
+  .bloc,
+  .quantite,
+  .actions {
+    grid-column: 2;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .paliers { padding: 1.25rem; margin-top: 1.5rem; }
+  .quantite { padding: 1.25rem; margin-top: 1.25rem; }
+
+  // Les boutons ne collent plus en bas : sur un ecran large, un bandeau
+  // colle au bas de la fenetre est loin du produit qu'il concerne.
+  .actions {
+    position: static;
+    margin-top: 1.5rem;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    border-top: none;
+  }
+}
+
+// Le survol des declinaisons et du retour.
+@media (hover: hover) {
+  .option:not(:disabled):hover {
+    border-color: var(--primaire);
+    color: var(--primaire);
+  }
+
+  .photo__retour:hover { border-color: var(--primaire); color: var(--primaire); }
+
+  .fil a:hover { color: var(--primaire); text-decoration: underline; }
+
+  .miniature:not(.miniature--active):hover {
+    border-color: color-mix(in srgb, var(--primaire) 45%, transparent);
+  }
+
+  .partage:hover { border-color: var(--primaire); color: var(--primaire); }
+
+  .compteur button:hover { background: var(--surface-douce-survol); }
+}
+
+.option,
+.partage,
+.miniature,
+.fil a,
+.photo__retour { transition: border-color 0.2s ease-in-out, color 0.2s ease-in-out; }
+.compteur button { transition: background 0.15s ease-in-out; }

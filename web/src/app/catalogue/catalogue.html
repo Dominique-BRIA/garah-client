@@ -27,9 +27,13 @@
   <div class="gb-etat">
     @if (filtre(); as q) {
       <p>Rien ne correspond à « {{ q }} ».</p>
-      <!-- ⚠️ On DIT que la recherche ne porte que sur les articles déjà
-           chargés : sans cette phrase, on conclut que l'article n'existe pas. -->
-      <p class="gb-attenue">La recherche porte sur les articles déjà affichés. Chargez la suite pour élargir.</p>
+      <!-- On dit SUR QUOI porte la recherche : sans cette phrase, on essaie
+           une référence ou un numéro de commande, et on conclut que la
+           boutique est vide. -->
+      <p class="gb-attenue">La recherche porte sur le nom de l’article, le vendeur et la catégorie.</p>
+      <button type="button" class="gb-btn gb-btn--secondaire" (click)="effacer()">
+        Voir tout le catalogue
+      </button>
     } @else {
       <p>Le catalogue est vide pour le moment.</p>
     }
@@ -44,15 +48,23 @@
           }
         </div>
         <div class="carte__corps">
+          @if (p.categorieNom) {
+            <p class="carte__categorie">{{ p.categorieNom }}</p>
+          }
           <p class="carte__nom">{{ p.nom }}</p>
           @if (p.marchandNom) { <p class="carte__vendeur">{{ p.marchandNom }}</p> }
           <p class="carte__prix">
             <span class="carte__des gb-attenue">dès</span> {{ montant(p.prixMin, p.devise) }}
           </p>
+          <!-- Ce qui reste. Un article épuisé reste VISIBLE : le masquer ferait
+               croire qu'il n'existe pas, et chercher ailleurs. Un stock qui
+               s'épuise se dit AVANT le clic, pas au moment de payer. -->
           @if (p.quantiteDisponible === 0) {
-            <!-- Un article epuise reste VISIBLE : le masquer ferait croire
-                 qu'il n'existe pas, et chercher ailleurs. -->
-            <span class="gb-etiquette gb-etiquette--neutre">Épuisé</span>
+            <span class="gb-etiquette gb-etiquette--neutre carte__epuise">Épuisé</span>
+          } @else if (p.quantiteDisponible <= 5) {
+            <span class="gb-etiquette gb-etiquette--alerte carte__epuise">
+              Plus que {{ p.quantiteDisponible }}
+            </span>
           }
         </div>
       </a>

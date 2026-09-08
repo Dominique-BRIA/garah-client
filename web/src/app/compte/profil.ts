@@ -1,119 +1,73 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { ServiceSession } from '../../services/session';
+
 interface MonProfil {
+  readonly id: number;
   readonly nom: string;
+  readonly prenom: string | null;
   readonly email: string;
   readonly telephone: string | null;
+  readonly langue: string;
   readonly emailVerifie: boolean;
 }
 
 /**
  * Mon compte.
  *
- * <p>Première passe : la lecture. La modification des coordonnées et le
- * changement de mot de passe suivront — les routes existent
- * ({@code PUT /api/profil}, {@code POST /api/profil/mot-de-passe}).</p>
+ * <h2>Ce qui se modifie, et ce qui ne se modifie pas</h2>
+ *
+ * <p>Nom, prénom, téléphone, langue : oui. <b>L'adresse e-mail : non.</b> Elle
+ * identifie le compte, sert à s'y connecter, et a été vérifiée. En changer est
+ * un parcours à part entière — vérifier qu'elle est libre, repasser
+ * {@code emailVerifie} à faux, réémettre un lien — et non un champ de
+ * formulaire. Le serveur ne l'accepte d'ailleurs pas.</p>
+ *
+ * <p>On le <b>dit</b> plutôt que d'afficher un champ grisé : un champ qu'on ne
+ * peut pas remplir donne envie d'essayer.</p>
  */
 @Component({
   selector: 'gb-profil',
-  imports: [RouterLink],
-  template: `
-    <header class="entete"><h1>Mon compte</h1></header>
-
-    @if (chargement()) {
-      <div class="gb-etat"><p>Chargement…</p></div>
-    } @else if (profil(); as p) {
-      <dl class="infos">
-        <div>
-          <dt>Nom</dt>
-          <dd>{{ p.nom }}</dd>
-        </div>
-        <div>
-          <dt>Adresse e-mail</dt>
-          <dd>
-            {{ p.email }}
-            @if (!p.emailVerifie) {
-              <!-- ⚠️ Pas décoratif : un compte non vérifié ne reçoit AUCUN
-                   courriel — ni confirmation de commande, ni lien de suivi. -->
-              <span class="non-verifie">non confirmée</span>
-            }
-          </dd>
-        </div>
-        <div>
-          <dt>Téléphone</dt>
-          <dd>{{ p.telephone ?? '—' }}</dd>
-        </div>
-      </dl>
-
-      @if (!p.emailVerifie) {
-        <p class="avertissement">
-          Tant que votre adresse n’est pas confirmée, vous ne recevrez ni
-          confirmation de commande ni lien de suivi. Le lien vous a été envoyé
-          à l’inscription.
-        </p>
-      }
-    } @else {
-      <div class="gb-etat"><p>Votre profil n’a pas pu être chargé.</p></div>
-    }
-
-    <div class="liens">
-      <a routerLink="/mes-commandes" class="gb-btn gb-btn--secondaire gb-btn--plein">
-        Mes commandes
-      </a>
-    </div>
-  `,
-  styles: `
-    .entete { padding: 1.5rem 1.25rem 1rem; }
-    .entete h1 { margin: 0; font-size: 1.3rem; font-weight: 700; }
-
-    .infos {
-      margin: 0;
-      padding: 0 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-
-      dt {
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--texte-attenue);
-        margin-bottom: 0.25rem;
-      }
-
-      dd { margin: 0; font-size: 0.9rem; overflow-wrap: anywhere; }
-    }
-
-    .non-verifie {
-      margin-left: 0.4rem;
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: var(--alerte);
-    }
-
-    .avertissement {
-      margin: 1.25rem 1.25rem 0;
-      padding: 0.85rem 1rem;
-      border-radius: var(--rayon-petit);
-      background: color-mix(in srgb, var(--alerte) 8%, transparent);
-      border: 1px solid color-mix(in srgb, var(--alerte) 25%, transparent);
-      font-size: 0.8rem;
-      line-height: 1.55;
-    }
-
-    .liens { padding: 1.5rem 1.25rem; }
-  `,
+  imports: [FormsModule, RouterLink],
+  templateUrl: './profil.html',
+  styleUrl: './profil.scss',
 })
 export class Profil {
   private readonly http = inject(HttpClient);
+  protected readonly session = inject(ServiceSession);
 
   protected readonly profil = signal<MonProfil | null>(null);
   protected readonly chargement = signal(true);
 
+  // --- Coordonnées ---
+  protected readonly edition = signal(false);
+  protected readonly nom = signal('');
+  protected readonly prenom = signal('');
+  protected readonly telephone = signal('');
+  protected readonly langue = signal('fr');
+  protected readonly envoi = signal(false);
+  protected readonly erreur = signal<string | null>(null);
+  protected readonly enregistre = signal(false);
+
+  // --- Mot de passe ---
+  protected readonly formMotDePasse = signal(false);
+  protected readonly actuel = signal('');
+  protected readonly nouveau = signal('');
+  protected readonly confirmation = signal('');
+  protected readonly envoiMotDePasse = signal(false);
+  protected readonly erreurMotDePasse = signal<string | null>(null);
+  protected readonly motDePasseChange = signal(false);
+
   constructor() {
+    this.charger();
+  }
+
+  protected charger(): void {
+    this.chargement.set(true);
+
     this.http.get<MonProfil>('/api/profil').subscribe({
       next: (p) => {
         this.profil.set(p);
@@ -122,4 +76,121 @@ export class Profil {
       error: () => this.chargement.set(false),
     });
   }
+
+  // -------------------------------------------------------------------------
+  // Les coordonnées
+  // -------------------------------------------------------------------------
+
+  protected ouvrirEdition(): void {
+    const p = this.profil();
+    if (!p) {
+      return;
+    }
+    this.nom.set(p.nom);
+    this.prenom.set(p.prenom ?? '');
+    this.telephone.set(p.telephone ?? '');
+    this.langue.set(p.langue || 'fr');
+    this.erreur.set(null);
+    this.enregistre.set(false);
+    this.edition.set(true);
+  }
+
+  protected enregistrer(): void {
+    if (this.envoi() || !this.nom().trim()) {
+      return;
+    }
+    this.envoi.set(true);
+    this.erreur.set(null);
+
+    // ⚠️ `PATCH`, pas `PUT` : le serveur ne modifie que les champs présents.
+    //    Envoyer la fiche entière écraserait ce que cet écran n'affiche pas.
+    this.http
+      .patch<MonProfil>('/api/profil', {
+        nom: this.nom().trim(),
+        prenom: this.prenom().trim() || null,
+        telephone: this.telephone().trim() || null,
+        langue: this.langue(),
+      })
+      .subscribe({
+        next: (p) => {
+          this.envoi.set(false);
+          this.profil.set(p);
+          this.edition.set(false);
+          this.enregistre.set(true);
+        },
+        error: (e: unknown) => {
+          this.envoi.set(false);
+          this.erreur.set(message(e, 'Vos coordonnées n’ont pas pu être enregistrées.'));
+        },
+      });
+  }
+
+  // -------------------------------------------------------------------------
+  // Le mot de passe
+  // -------------------------------------------------------------------------
+
+  protected ouvrirMotDePasse(): void {
+    this.actuel.set('');
+    this.nouveau.set('');
+    this.confirmation.set('');
+    this.erreurMotDePasse.set(null);
+    this.motDePasseChange.set(false);
+    this.formMotDePasse.set(true);
+  }
+
+  protected motDePasseValide(): boolean {
+    return (
+      this.actuel().length > 0 &&
+      this.nouveau().length >= 8 &&
+      this.nouveau() === this.confirmation()
+    );
+  }
+
+  /**
+   * ⚠️ La confirmation est vérifiée <b>ici seulement</b> : le serveur ne la
+   *    connaît pas, elle n'est qu'un garde-fou contre la faute de frappe. Se
+   *    tromper en changeant son mot de passe enferme dehors.
+   */
+  protected changerMotDePasse(): void {
+    if (!this.motDePasseValide() || this.envoiMotDePasse()) {
+      return;
+    }
+    this.envoiMotDePasse.set(true);
+    this.erreurMotDePasse.set(null);
+
+    this.http
+      .post('/api/profil/mot-de-passe', { actuel: this.actuel(), nouveau: this.nouveau() })
+      .subscribe({
+        next: () => {
+          this.envoiMotDePasse.set(false);
+          this.formMotDePasse.set(false);
+          this.motDePasseChange.set(true);
+        },
+        error: (e: unknown) => {
+          this.envoiMotDePasse.set(false);
+          this.erreurMotDePasse.set(
+            message(e, 'Le mot de passe n’a pas pu être changé.'),
+          );
+        },
+      });
+  }
+
+  protected seDeconnecter(): void {
+    this.session.deconnecter().subscribe(() => {
+      window.location.href = '/';
+    });
+  }
+}
+
+function message(e: unknown, repli: string): string {
+  if (e instanceof HttpErrorResponse) {
+    if (e.status === 0) {
+      return 'Pas de connexion. Réessayez dans un instant.';
+    }
+    const corps = e.error as { message?: string } | null;
+    if (corps?.message) {
+      return corps.message;
+    }
+  }
+  return repli;
 }

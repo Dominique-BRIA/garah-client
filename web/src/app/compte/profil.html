@@ -1,0 +1,168 @@
+<header class="entete">
+  <h1>Mon compte</h1>
+  <button type="button" class="gb-btn gb-btn--secondaire" (click)="seDeconnecter()">
+    Se déconnecter
+  </button>
+</header>
+
+@if (chargement()) {
+  <div class="gb-etat"><p>Chargement…</p></div>
+} @else if (profil(); as p) {
+
+  @if (enregistre()) {
+    <p class="confirmation" role="status">Vos coordonnées sont enregistrées.</p>
+  }
+  @if (motDePasseChange()) {
+    <p class="confirmation" role="status">Votre mot de passe a été changé.</p>
+  }
+
+  <!-- ================================================================== -->
+  <!-- Les coordonnées                                                     -->
+  <!-- ================================================================== -->
+  @if (!edition()) {
+    <section class="bloc">
+      <div class="bloc__entete">
+        <p class="gb-libelle">Coordonnées</p>
+        <button type="button" class="lien" (click)="ouvrirEdition()">Modifier</button>
+      </div>
+
+      <dl class="infos">
+        <div>
+          <dt>Nom</dt>
+          <dd>{{ p.prenom ? p.prenom + ' ' + p.nom : p.nom }}</dd>
+        </div>
+        <div>
+          <dt>Adresse e-mail</dt>
+          <dd>
+            {{ p.email }}
+            @if (!p.emailVerifie) {
+              <!-- ⚠️ Pas décoratif : un compte non vérifié ne reçoit AUCUN
+                   courriel — ni confirmation de commande, ni lien de suivi. -->
+              <span class="non-verifie">non confirmée</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Téléphone</dt>
+          <dd>{{ p.telephone ?? '—' }}</dd>
+        </div>
+      </dl>
+
+      @if (!p.emailVerifie) {
+        <p class="avertissement">
+          Tant que votre adresse n’est pas confirmée, vous ne recevrez ni
+          confirmation de commande ni lien de suivi. Le lien vous a été envoyé
+          à l’inscription.
+        </p>
+      }
+    </section>
+  } @else {
+    <form class="bloc" (ngSubmit)="enregistrer()" novalidate>
+      <p class="gb-libelle">Modifier mes coordonnées</p>
+
+      <label class="gb-libelle" for="nom">Nom</label>
+      <input id="nom" name="nom" class="gb-champ" required maxlength="100" autocomplete="family-name"
+             [ngModel]="nom()" (ngModelChange)="nom.set($event)" />
+
+      <label class="gb-libelle" for="prenom">Prénom</label>
+      <input id="prenom" name="prenom" class="gb-champ" maxlength="100" autocomplete="given-name"
+             [ngModel]="prenom()" (ngModelChange)="prenom.set($event)" />
+
+      <label class="gb-libelle" for="tel">Téléphone</label>
+      <input id="tel" name="telephone" class="gb-champ" maxlength="30" inputmode="tel"
+             autocomplete="tel" placeholder="+237 6 99 00 00 00"
+             [ngModel]="telephone()" (ngModelChange)="telephone.set($event)" />
+
+      <label class="gb-libelle" for="langue">Langue</label>
+      <select id="langue" name="langue" class="gb-champ"
+              [ngModel]="langue()" (ngModelChange)="langue.set($event)">
+        <option value="fr">Français</option>
+        <option value="en">Anglais</option>
+      </select>
+
+      <!-- L'adresse ne se modifie PAS ici, et on le dit : un champ grisé
+           donnerait envie d'essayer. -->
+      <p class="aide">
+        L’adresse e-mail ne se change pas ici : elle identifie votre compte et
+        sert à vous connecter. Écrivez-nous pour en changer.
+      </p>
+
+      @if (erreur(); as m) {
+        <p class="gb-alerte" role="alert">{{ m }}</p>
+      }
+
+      <div class="boutons">
+        <button type="submit" class="gb-btn gb-btn--primaire"
+                [disabled]="!nom().trim() || envoi()">
+          @if (envoi()) { Enregistrement… } @else { Enregistrer }
+        </button>
+        <button type="button" class="gb-btn gb-btn--secondaire" (click)="edition.set(false)">
+          Annuler
+        </button>
+      </div>
+    </form>
+  }
+
+  <!-- ================================================================== -->
+  <!-- Le mot de passe                                                     -->
+  <!-- ================================================================== -->
+  @if (!formMotDePasse()) {
+    <section class="bloc">
+      <div class="bloc__entete">
+        <p class="gb-libelle">Mot de passe</p>
+        <button type="button" class="lien" (click)="ouvrirMotDePasse()">Changer</button>
+      </div>
+    </section>
+  } @else {
+    <form class="bloc" (ngSubmit)="changerMotDePasse()" novalidate>
+      <p class="gb-libelle">Changer mon mot de passe</p>
+
+      <label class="gb-libelle" for="actuel">Mot de passe actuel</label>
+      <input id="actuel" name="actuel" type="password" class="gb-champ" required
+             autocomplete="current-password"
+             [ngModel]="actuel()" (ngModelChange)="actuel.set($event)" />
+
+      <label class="gb-libelle" for="nouveau">Nouveau mot de passe</label>
+      <input id="nouveau" name="nouveau" type="password" class="gb-champ" required
+             autocomplete="new-password"
+             [ngModel]="nouveau()" (ngModelChange)="nouveau.set($event)" />
+      <p class="aide">Au moins 8 caractères.</p>
+
+      <label class="gb-libelle" for="confirmation">Répéter le nouveau</label>
+      <input id="confirmation" name="confirmation" type="password" class="gb-champ" required
+             autocomplete="new-password"
+             [ngModel]="confirmation()" (ngModelChange)="confirmation.set($event)" />
+
+      <!-- La répétition est vérifiée ICI seulement : le serveur ne la connaît
+           pas. Se tromper en changeant son mot de passe enferme dehors. -->
+      @if (confirmation() && nouveau() !== confirmation()) {
+        <p class="aide aide--attention">Les deux saisies ne correspondent pas.</p>
+      }
+
+      @if (erreurMotDePasse(); as m) {
+        <p class="gb-alerte" role="alert">{{ m }}</p>
+      }
+
+      <div class="boutons">
+        <button type="submit" class="gb-btn gb-btn--primaire"
+                [disabled]="!motDePasseValide() || envoiMotDePasse()">
+          @if (envoiMotDePasse()) { Changement… } @else { Changer }
+        </button>
+        <button type="button" class="gb-btn gb-btn--secondaire" (click)="formMotDePasse.set(false)">
+          Annuler
+        </button>
+      </div>
+    </form>
+  }
+} @else {
+  <div class="gb-etat">
+    <p>Votre profil n’a pas pu être chargé.</p>
+    <button type="button" class="gb-btn gb-btn--secondaire" (click)="charger()">Réessayer</button>
+  </div>
+}
+
+<div class="liens">
+  <a routerLink="/mes-commandes" class="gb-btn gb-btn--secondaire gb-btn--plein">
+    Mes commandes
+  </a>
+</div>

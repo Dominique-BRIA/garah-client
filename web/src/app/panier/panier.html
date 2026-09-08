@@ -9,6 +9,11 @@
     <a routerLink="/catalogue" class="gb-btn gb-btn--secondaire">Parcourir le catalogue</a>
   </div>
 } @else {
+  <!-- Sur écran large, les lignes à gauche et le total à droite : le total
+       reste visible pendant qu'on ajuste les quantités. Empilé, il passe sous
+       la ligne de flottaison dès trois articles — et c'est justement le
+       chiffre qu'on surveille en modifiant le panier. -->
+  <div class="colonnes">
   <div class="lignes">
     @for (l of panier.lignes(); track l.varianteId) {
       <div class="gb-carte ligne">
@@ -63,6 +68,7 @@
       frais compris, s’affiche à l’étape suivante.
     </p>
   </section>
+  </div>
 
   <div class="actions">
     @if (session.connecte()) {

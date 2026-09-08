@@ -58,3 +58,31 @@
 
 .actions { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .actions__mention { margin: 0; text-align: center; font-size: 0.75rem; color: var(--texte-attenue); }
+
+// =============================================================================
+// Ecrans larges : les lignes a gauche, le total a droite
+// =============================================================================
+// Le total reste VISIBLE pendant qu'on ajuste les quantites. Empile, il passe
+// sous la ligne de flottaison des qu'il y a trois articles — et c'est
+// justement le chiffre qu'on surveille en modifiant le panier.
+@media (min-width: 900px) {
+  .entete { padding: 2rem 0 1.5rem; }
+  .entete h1 { font-size: 1.6rem; }
+
+  .lignes { padding: 0; }
+
+  .colonnes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
+    gap: 2rem;
+  }
+
+  .total {
+    margin: 0;
+    position: sticky;
+    top: 88px;
+  }
+
+  .actions { padding: 1.25rem 0 2rem; }
+}

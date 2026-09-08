@@ -157,6 +157,21 @@
   gap: 0.25rem;
 }
 
+// La catégorie, au-dessus du nom : dans une grille, deux articles voisins n'ont
+// aucun rapport visible. C'est le seul mot qui dit d'où vient celui-ci.
+.carte__categorie {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-attenue);
+  // Une seule ligne : la catégorie situe, elle ne se lit pas.
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .carte__nom {
   margin: 0;
   font-size: 0.83rem;
@@ -237,4 +252,118 @@
   font-size: 0.78rem;
   color: var(--texte-attenue);
   line-height: 1.45;
+}
+
+// =============================================================================
+// Ecrans larges
+// =============================================================================
+// ⚠️ L'entete de l'ecran d'accueil DISPARAIT entierement : la coque en porte
+//    deja un, avec la marque, la bascule de theme et — depuis peu — la
+//    recherche. Deux champs de recherche visibles a la fois sur le meme ecran
+//    font hesiter sur celui qui compte.
+//
+//    Celui du catalogue, lui, reste : il porte le terme applique et son bouton
+//    « Effacer », ce que l'entete ne sait pas faire.
+@media (min-width: 900px) {
+  .entete { display: none; }
+
+  .corridor,
+  .suivi { margin-left: 0; margin-right: 0; }
+
+  .bloc { padding-left: 0; padding-right: 0; }
+
+  .bloc__titre { font-size: 1.35rem; }
+
+  // Quatre colonnes : a 1 180 px, deux colonnes donneraient des vignettes de
+  // 560 px de large — une photo de chemise n'a pas besoin de cette place.
+  .grille { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+
+  .carte__nom { font-size: 0.95rem; }
+  .carte__prix { font-size: 1.05rem; }
+}
+
+// Palier intermediaire : tablette en paysage, petit portable.
+@media (min-width: 640px) and (max-width: 899px) {
+  .grille { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+// Les tendances vides : une ligne, pas un bloc. Le catalogue prend le relais
+// juste en dessous, et un grand vide au milieu de l'accueil ferait croire a
+// une boutique fermee.
+.vide {
+  margin: 0;
+  padding: 0.5rem 0 0.25rem;
+  font-size: 0.82rem;
+}
+
+.carte__epuise { margin-top: 0.3rem; align-self: flex-start; }
+
+// L'embleme reprend la calebasse de garah-ui : la taille est portee par
+// l'hote du composant.
+.marque__embleme { width: 1.6rem; height: 1.6rem; }
+
+// La bascule de theme, poussee a droite de la marque. Au telephone, c'est le
+// seul endroit en haut de page — la coque n'y affiche pas d'en-tete.
+.bascule {
+  margin-left: auto;
+  min-width: var(--cible-tactile-min);
+  min-height: var(--cible-tactile-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--verre-bordure);
+  border-radius: var(--rayon-petit);
+  background: var(--verre-fond);
+  color: var(--texte-attenue);
+  cursor: pointer;
+
+  svg { width: 19px; height: 19px; }
+  &:hover { color: var(--texte); }
+  &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+}
+
+// Sur ecran large, la coque porte deja la bascule : deux boutons pour le meme
+// geste sur la meme page feraient douter de leur effet.
+@media (min-width: 900px) {
+  .bascule { display: none; }
+}
+
+// =============================================================================
+// Le survol
+// =============================================================================
+// Une carte produit EST un lien : elle doit le dire au passage de la souris.
+// Sans reaction, elle se lit comme une vignette decorative.
+@media (hover: hover) {
+  .carte:hover {
+    border-color: color-mix(in srgb, var(--primaire) 25%, transparent);
+    box-shadow: var(--verre-ombre), 0 0 20px color-mix(in srgb, var(--primaire) 10%, transparent);
+  }
+
+  // La photo avance legerement : c'est elle qu'on regarde, et le mouvement
+  // confirme la cible du clic mieux qu'un changement de bordure seul.
+  .carte:hover .carte__image img { transform: scale(1.04); }
+
+  .puce:hover {
+    border-color: var(--primaire);
+    color: var(--primaire);
+  }
+
+  .bloc__lien:hover { text-decoration: underline; }
+
+  .suivi:hover {
+    border-color: var(--primaire);
+    border-style: solid;
+  }
+}
+
+.carte { transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+.carte__image img { transition: transform 0.25s ease-out; }
+.carte__image { overflow: hidden; }
+.puce,
+.suivi { transition: border-color 0.2s ease-in-out, color 0.2s ease-in-out; }
+
+// Un mouvement permanent est penible pour qui y est sensible.
+@media (prefers-reduced-motion: reduce) {
+  .carte__image img { transition: none; }
+  .carte:hover .carte__image img { transform: none; }
 }

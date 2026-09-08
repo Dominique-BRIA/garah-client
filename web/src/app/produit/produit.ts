@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import {
   Declinaison,
   FicheVitrine,
+  MediaProduit,
   PalierPrix,
   estAchetable,
   montantLisible,
@@ -54,6 +55,9 @@ export class Produit {
   protected readonly erreur = signal<string | null>(null);
 
   protected readonly declinaisonId = signal<number | null>(null);
+  protected readonly mediaId = signal<number | null>(null);
+  /** Le lien vient d'être copié : le dire, sinon le clic n'a rien fait de visible. */
+  protected readonly lienCopie = signal(false);
   protected readonly quantite = signal(1);
   protected readonly ajoute = signal(false);
 
@@ -100,9 +104,37 @@ export class Produit {
     return d && d.quantiteMinimale > 1 ? d.quantiteMinimale : null;
   });
 
-  protected readonly photoPrincipale = computed(
-    () => this.fiche()?.medias.find((m) => m.principal)?.url ?? this.fiche()?.medias[0]?.url ?? null,
-  );
+  /**
+   * Les photos, la principale en tête.
+   *
+   * <p>🎯 La fiche en renvoie plusieurs depuis toujours ; l'écran n'en montrait
+   * qu'une. Sur un téléphone on tolère une seule image ; sur un écran large la
+   * place est là — et une seule photo d'un article qu'on ne peut ni toucher ni
+   * essayer, c'est une raison de ne pas acheter.</p>
+   */
+  protected readonly photos = computed<readonly MediaProduit[]>(() => {
+    const medias = this.fiche()?.medias ?? [];
+    return [...medias].sort(
+      (a, b) => Number(b.principal) - Number(a.principal) || a.ordre - b.ordre,
+    );
+  });
+
+  /** La couverture : celle qui part au panier, quoi qu'on regarde à l'écran. */
+  protected readonly photoPrincipale = computed(() => this.photos()[0]?.url ?? null);
+
+  /** Celle qu'on regarde en ce moment. */
+  protected readonly photoAffichee = computed(() => {
+    const choisie = this.photos().find((m) => m.id === this.mediaId());
+    return choisie?.url ?? this.photoPrincipale();
+  });
+
+  /**
+   * La mention de TVA, seulement s'il y en a une.
+   *
+   * <p>Le taux ne regarde pas le client : ce qu'il veut savoir, c'est si le
+   * prix affiché est celui qu'il paiera.</p>
+   */
+  protected readonly tvaIncluse = computed(() => (this.fiche()?.tauxTva ?? 0) > 0);
 
   constructor() {
     // `input.required` n'est pas lisible dans le constructeur : on charge au
@@ -119,6 +151,7 @@ export class Produit {
       .subscribe({
         next: (f) => {
           this.fiche.set(f);
+          this.mediaId.set(null);
           this.chargement.set(false);
 
           // On ouvre sur une déclinaison ACHETABLE si elle existe : ouvrir sur
@@ -203,6 +236,49 @@ export class Produit {
     });
 
     this.ajoute.set(true);
+  }
+
+  protected choisirPhoto(m: MediaProduit): void {
+    this.mediaId.set(m.id);
+  }
+
+  /**
+   * Partager la fiche.
+   *
+   * <p>🎯 Un article se montre à quelqu'un avant de s'acheter. Sans ce bouton,
+   * il faut recopier la barre d'adresse — ce que personne ne fait depuis un
+   * téléphone.</p>
+   *
+   * <p>⚠️ {@code navigator.share} n'existe pas sur tous les navigateurs de
+   * bureau, et le presse-papier est refusé hors contexte sécurisé. Les deux
+   * échouent en silence : d'où le repli, puis le repli du repli.</p>
+   */
+  protected partager(): void {
+    const f = this.fiche();
+    if (!f) {
+      return;
+    }
+    const url = location.href;
+
+    if (navigator.share) {
+      // Le rejet est la NORME ici : c'est l'utilisateur qui referme la feuille
+      // de partage. On ne le traite donc pas comme une panne.
+      navigator.share({ title: f.nom, url }).catch(() => this.copier(url));
+      return;
+    }
+    this.copier(url);
+  }
+
+  private copier(url: string): void {
+    navigator.clipboard
+      ?.writeText(url)
+      .then(() => {
+        this.lienCopie.set(true);
+        setTimeout(() => this.lienCopie.set(false), 2500);
+      })
+      .catch(() => {
+        /* rien de plus à proposer : l'URL reste dans la barre d'adresse */
+      });
   }
 
   protected negocier(): void {

@@ -28,16 +28,34 @@ body {
   text-wrap: pretty;
 }
 
-// ⚠️ La boutique se lit AU TÉLÉPHONE. On borne la largeur et on centre :
-//    sans cela, une fiche produit s'étale sur 1 400 px et devient illisible
-//    pour les rares visiteurs sur ordinateur.
+// =============================================================================
+// La largeur de lecture
+// =============================================================================
+// 🎯 CECI EST LA VERSION **WEB**. Elle doit être bonne au téléphone comme sur
+//    un écran large — l'application installée, elle, sera celle en Flutter.
+//
+// ⚠️ Une première version bornait TOUT à 480 px centrés. Au téléphone c'était
+//    juste ; sur un ordinateur, la boutique devenait une colonne étroite
+//    perdue au milieu d'un écran vide. Le symptôme est trompeur, parce que la
+//    page n'est pas cassée : elle est seulement construite pour le mauvais
+//    écran.
+//
+// On borne donc par PALIERS, et on laisse chaque écran répartir sa largeur.
 .gb-page {
   width: 100%;
-  max-width: 480px;
   margin: 0 auto;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+@media (min-width: 900px) {
+  .gb-page {
+    // 1 180 px : au-delà, une ligne de texte devient trop longue à parcourir
+    // des yeux, et la grille de produits s'étire en vignettes énormes.
+    max-width: 1180px;
+    padding: 0 2rem;
+  }
 }
 
 // --- Boutons -----------------------------------------------------------------
@@ -73,16 +91,53 @@ body {
   }
 }
 
+// ⚠️ LE SURVOL EST UNE RÈGLE, PAS UNE FINITION.
+//
+//    Un bouton qui ne réagit pas au passage de la souris ne se distingue pas
+//    d'un texte : sur un écran large, c'est le survol qui dit « ceci se
+//    clique ». Les valeurs sont celles de `garah-ui` — la marque doit se
+//    reconnaître d'une application à l'autre, jusque dans ses réactions.
 .gb-btn--primaire {
   background: linear-gradient(135deg, var(--primaire) 0%, var(--primaire-sombre) 100%);
   color: #fff;
   box-shadow: 0 4px 12px color-mix(in srgb, var(--primaire) 30%, transparent);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--primaire) 45%, transparent);
+  }
+
+  // Le retour au repos au clic : sans lui, le bouton reste soulevé sous le
+  // doigt et l'appui ne se sent pas.
+  &:active:not(:disabled) { transform: translateY(0); }
 }
 
 .gb-btn--secondaire {
   background: var(--surface-douce);
   border-color: var(--verre-bordure);
   color: var(--texte);
+
+  &:hover:not(:disabled) {
+    background: var(--surface-douce-survol);
+    border-color: var(--texte-attenue);
+  }
+}
+
+// ⚠️ Le survol ne s'applique QUE là où il existe un pointeur.
+//
+//    Sur un écran tactile, `:hover` reste collé après le toucher : le bouton
+//    garde son état survolé jusqu'au prochain appui ailleurs, et l'utilisateur
+//    croit avoir laissé quelque chose de sélectionné.
+@media (hover: none) {
+  .gb-btn--primaire:hover:not(:disabled) {
+    transform: none;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primaire) 30%, transparent);
+  }
+
+  .gb-btn--secondaire:hover:not(:disabled) {
+    background: var(--surface-douce);
+    border-color: var(--verre-bordure);
+  }
 }
 
 .gb-btn--plein {
@@ -96,6 +151,14 @@ body {
   border: 1px solid var(--verre-bordure);
   border-radius: var(--rayon-grand);
   box-shadow: var(--verre-ombre);
+}
+
+// Une carte CLIQUABLE réagit ; une carte d'information ne bouge pas. Faire
+// réagir les deux ferait espérer un clic là où il n'y en a pas.
+a.gb-carte:hover,
+.gb-cliquable:hover {
+  border-color: color-mix(in srgb, var(--primaire) 25%, transparent);
+  box-shadow: var(--verre-ombre), 0 0 20px color-mix(in srgb, var(--primaire) 10%, transparent);
 }
 
 // --- Champs ------------------------------------------------------------------

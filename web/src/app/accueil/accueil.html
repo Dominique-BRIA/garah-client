@@ -1,10 +1,26 @@
 <header class="entete">
+  <!-- Sur écran large, la coque porte déjà marque et bascule : ce bandeau
+       disparaît (voir la média-requête). Au téléphone, il est le seul endroit
+       en haut de page, donc la bascule y vit aussi. -->
   <div class="marque">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="marque__embleme">
-      <path d="M12 2.5 21 7v10l-9 4.5L3 17V7l9-4.5Z" stroke="var(--marque)" stroke-width="1.7" stroke-linejoin="round" />
-      <path d="M12 7.5 16.5 10v4L12 16.5 7.5 14v-4L12 7.5Z" fill="var(--marque)" />
-    </svg>
+    <gb-marque class="marque__embleme" />
     <span class="marque__nom">GARAH</span>
+
+    <button type="button" class="bascule" (click)="theme.basculer()"
+            [attr.aria-label]="theme.sombre() ? 'Passer au thème clair' : 'Passer au thème sombre'">
+      @if (theme.sombre()) {
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7" />
+          <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"
+                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+        </svg>
+      } @else {
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"
+                stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+        </svg>
+      }
+    </button>
   </div>
 
   <form class="recherche" (ngSubmit)="chercher()" novalidate>
@@ -73,12 +89,13 @@
       }
     </div>
   } @else if (tendances().length === 0) {
-    <!-- Un catalogue neuf n'a aucune tendance : c'est normal, pas une erreur.
-         On envoie vers le catalogue plutôt que de laisser un trou. -->
-    <div class="gb-etat">
-      <p>Rien encore dans les tendances.</p>
-      <a routerLink="/catalogue" class="gb-btn gb-btn--secondaire">Parcourir le catalogue</a>
-    </div>
+    <!-- Un catalogue neuf n'a aucune tendance : elles se calculent sur des
+         ventes. Une seule ligne discrète, et le catalogue prend le relais
+         juste en dessous — un grand bloc vide au milieu de l'accueil ferait
+         croire à une boutique fermée. -->
+    <p class="gb-attenue vide">
+      Les articles les plus vendus apparaîtront ici.
+    </p>
   } @else {
     <div class="grille">
       @for (p of tendances(); track p.id) {
@@ -95,6 +112,9 @@
             }
           </div>
           <div class="carte__corps">
+            @if (p.categorieNom) {
+              <p class="carte__categorie">{{ p.categorieNom }}</p>
+            }
             <p class="carte__nom">{{ p.nom }}</p>
             @if (p.marchandNom) {
               <p class="carte__vendeur">{{ p.marchandNom }}</p>
@@ -103,12 +123,90 @@
               <span class="gb-attenue carte__des">dès</span>
               {{ montant(p.prixMin, p.devise) }}
             </p>
+            <!-- Ce qui reste. Un article épuisé reste VISIBLE : le masquer ferait
+                 croire qu'il n'existe pas, et chercher ailleurs. Un stock qui
+                 s'épuise se dit AVANT le clic, pas au moment de payer. -->
+            @if (p.quantiteDisponible === 0) {
+              <span class="gb-etiquette gb-etiquette--neutre carte__epuise">Épuisé</span>
+            } @else if (p.quantiteDisponible <= 5) {
+              <span class="gb-etiquette gb-etiquette--alerte carte__epuise">
+                Plus que {{ p.quantiteDisponible }}
+              </span>
+            }
           </div>
         </a>
       }
     </div>
   }
 </section>
+
+<!-- ===================================================================== -->
+<!-- Le reste du catalogue                                                  -->
+<!-- ===================================================================== -->
+<!-- 🎯 Sans ce bloc, un catalogue neuf n'a RIEN à montrer : les tendances se
+     calculent sur des ventes, et il n'y en a pas encore. Le visiteur arrivait
+     sur un accueil vide alors que la boutique a des produits. -->
+@if (autres().length > 0 || chargementAutres()) {
+  <section class="bloc">
+    <div class="bloc__entete">
+      <h2 class="bloc__titre">Dans la boutique</h2>
+      <a routerLink="/catalogue" class="bloc__lien">Tout voir</a>
+    </div>
+
+    @if (chargementAutres()) {
+      <div class="grille">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="carte carte--attente" aria-hidden="true">
+            <div class="carte__image"></div>
+            <div class="carte__corps">
+              <span class="fantome fantome--large"></span>
+              <span class="fantome"></span>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="grille">
+        @for (p of autres(); track p.id) {
+          <a class="carte" [routerLink]="['/produit', p.slug]">
+            <div class="carte__image">
+              @if (p.urlPhotoPrincipale) {
+                <img [src]="p.urlPhotoPrincipale" [alt]="p.nom" loading="lazy" decoding="async" />
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="carte__silhouette">
+                  <path d="M8 4 5 6v14h14V6l-3-2-4 2-4-2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                </svg>
+              }
+            </div>
+            <div class="carte__corps">
+              @if (p.categorieNom) {
+                <p class="carte__categorie">{{ p.categorieNom }}</p>
+              }
+              <p class="carte__nom">{{ p.nom }}</p>
+              @if (p.marchandNom) {
+                <p class="carte__vendeur">{{ p.marchandNom }}</p>
+              }
+              <p class="carte__prix">
+                <span class="gb-attenue carte__des">dès</span>
+                {{ montant(p.prixMin, p.devise) }}
+              </p>
+              <!-- Ce qui reste. Un article épuisé reste VISIBLE : le masquer ferait
+                   croire qu'il n'existe pas, et chercher ailleurs. Un stock qui
+                   s'épuise se dit AVANT le clic, pas au moment de payer. -->
+              @if (p.quantiteDisponible === 0) {
+                <span class="gb-etiquette gb-etiquette--neutre carte__epuise">Épuisé</span>
+              } @else if (p.quantiteDisponible <= 5) {
+                <span class="gb-etiquette gb-etiquette--alerte carte__epuise">
+                  Plus que {{ p.quantiteDisponible }}
+                </span>
+              }
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </section>
+}
 
 <!-- La seule page qu'on atteint sans compte. Elle mérite sa place ici : un
      client qui attend un colis n'ouvre pas la boutique pour acheter. -->

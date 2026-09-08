@@ -1,0 +1,339 @@
+// La coque : deux navigations, une seule visible à la fois.
+//
+// 900 px est la bascule. En dessous, on est au téléphone ou sur une tablette
+// en portrait : barre du bas, une colonne. Au-dessus, on a une souris et de la
+// largeur : en-tête horizontal.
+
+// --- L'en-tête (écrans larges) ----------------------------------------------
+.entete { display: none; }
+.quete { display: none; }
+
+.barre {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--verre-fond);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--verre-bordure);
+  // L'encoche des téléphones récents : sans cela, les libellés passent dessous
+  // et deviennent illisibles.
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 20;
+}
+
+.barre__lien {
+  min-height: var(--cible-tactile-min);
+  padding: 0.6rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  color: var(--texte-attenue);
+  text-decoration: none;
+  font-size: 0.66rem;
+  font-weight: 500;
+
+  svg { width: 21px; height: 21px; }
+  &:focus-visible { outline: 2px solid var(--primaire); outline-offset: -2px; }
+}
+
+.barre__lien--actif { color: var(--primaire); font-weight: 600; }
+
+.barre__pastille { position: relative; display: inline-flex; }
+
+.barre__compteur {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--primaire);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.corps {
+  // De la place sous le contenu, sinon la barre recouvre le dernier bouton de
+  // chaque écran — et c'est souvent le bouton principal.
+  padding-bottom: 4.5rem;
+}
+
+// =============================================================================
+// Écrans larges
+// =============================================================================
+@media (min-width: 900px) {
+  // La barre du bas disparaît : sur un écran large, elle est loin du regard et
+  // loin de la souris.
+  .barre { display: none; }
+  .corps { padding-bottom: 3rem; }
+
+  .entete {
+    display: block;
+    position: sticky;
+    top: 0;
+    background: var(--verre-fond);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--verre-bordure);
+    z-index: 20;
+  }
+
+  .entete__interieur {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .marque {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: inherit;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+
+    svg { width: 24px; height: 24px; }
+    &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 4px; }
+  }
+
+  .liens {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .liens__lien {
+    padding: 0.4rem 0;
+    color: var(--texte-attenue);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+
+    &:hover { color: var(--texte); }
+    &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 4px; }
+  }
+
+  .liens__lien--actif {
+    color: var(--primaire);
+    border-bottom-color: var(--primaire);
+  }
+
+  .quete {
+    // La recherche prend la largeur restante : c'est l'action la plus fréquente
+    // d'une boutique, elle ne se contente pas d'une icône.
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    max-width: 26rem;
+    position: relative;
+  }
+
+  .quete__loupe {
+    position: absolute;
+    left: 0.8rem;
+    width: 17px;
+    height: 17px;
+    color: var(--texte-attenue);
+    pointer-events: none;
+  }
+
+  .quete__champ {
+    // 40 px et non 44 : dans un en-tête de 64 px, une cible tactile pleine
+    // hauteur ne laisse plus d'air. Il y a une souris ici, pas un pouce.
+    min-height: 40px;
+    padding-left: 2.4rem;
+    font-size: 0.875rem;
+  }
+
+  .entete__actions {
+    // Pousse les actions à droite : le nom de la boutique à gauche, ce qu'on
+    // fait à droite. C'est la lecture attendue sur un écran large.
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .bouton {
+    position: relative;
+    min-width: var(--cible-tactile-min);
+    min-height: var(--cible-tactile-min);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--rayon-petit);
+    color: var(--texte-attenue);
+    text-decoration: none;
+
+    svg { width: 20px; height: 20px; }
+    &:hover { color: var(--texte); background: var(--surface-douce); }
+    &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+  }
+
+  .bouton--actif { color: var(--primaire); }
+
+  .bouton--texte {
+    padding: 0 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .bouton__compteur {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: var(--primaire);
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 700;
+  }
+
+  .entete__connexion { white-space: nowrap; }
+}
+
+// =============================================================================
+// Le bas de page
+// =============================================================================
+.pied {
+  margin-top: 3rem;
+  border-top: 1px solid var(--verre-bordure);
+  background: var(--surface-douce);
+  // ⚠️ De la place sous le contenu au telephone : la barre du bas est FIXE et
+  //    recouvrirait la derniere ligne du pied.
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+.pied__interieur {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.pied__marque {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+
+  gb-marque { width: 2rem; height: 2rem; flex-shrink: 0; }
+}
+
+.pied__nom {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+}
+
+.pied__phrase {
+  margin: 0.35rem 0 0;
+  max-width: 32rem;
+  font-size: 0.82rem;
+  color: var(--texte-attenue);
+  line-height: 1.6;
+}
+
+.pied__colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1.5rem;
+}
+
+.pied__colonne {
+  display: flex;
+  flex-direction: column;
+  // Des cibles a 44 px meme ici : un lien de bas de page se rate autant qu'un
+  // autre, et c'est souvent le dernier recours de qui cherche quelque chose.
+  gap: 0.1rem;
+
+  a {
+    min-height: var(--cible-tactile-min);
+    display: inline-flex;
+    align-items: center;
+    color: var(--texte-attenue);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.2s ease-in-out;
+
+    &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+  }
+}
+
+@media (hover: hover) {
+  .pied__colonne a:hover {
+    color: var(--primaire);
+    text-decoration: underline;
+  }
+}
+
+.pied__titre {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte);
+}
+
+// Un FAIT, pas un lien : rien a cliquer, donc rien qui reagisse au survol.
+.pied__fait {
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--texte-attenue);
+}
+
+.pied__bas {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 1.5rem;
+  border-top: 1px solid var(--verre-bordure);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--texte-attenue);
+}
+
+@media (min-width: 900px) {
+  // La barre du bas n'existe plus : plus besoin de reserver sa hauteur.
+  .pied { padding-bottom: 0; }
+
+  .pied__interieur {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 4rem;
+    padding: 2.5rem 2rem 2rem;
+  }
+
+  .pied__marque { flex: 1 1 22rem; }
+  .pied__colonnes { flex: 0 0 auto; grid-template-columns: repeat(3, minmax(9rem, auto)); gap: 3rem; }
+  .pied__bas { padding: 1rem 2rem 1.5rem; }
+}

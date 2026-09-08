@@ -38,7 +38,16 @@
      * Angular remplace le contenu de <gb-racine> à son démarrage, et cet
      * écran disparaît alors de lui-même. Aucun code ne l'efface.
      */
-    :root { color-scheme: light dark; }
+    /*
+     * ⚠️ On ne consulte PAS `prefers-color-scheme` ici.
+     *
+     *    Le thème vient du petit script en fin de <head>, qui pose
+     *    `data-theme` avant le premier rendu. Une règle média ajoutée ici
+     *    reprendrait la main sur le choix de l'utilisateur, et le bouton de
+     *    bascule paraîtrait cassé sur un système réglé en sombre.
+     */
+    :root { color-scheme: light; }
+    :root[data-theme='dark'] { color-scheme: dark; }
 
     html, body {
       margin: 0;
@@ -48,9 +57,9 @@
       font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
     }
 
-    @media (prefers-color-scheme: dark) {
-      html, body { background: #0c0c14; color: #f3f4f6; }
-    }
+    /* `:root` EST <html> : on le cible lui-même, pas un descendant. */
+    :root[data-theme='dark'],
+    :root[data-theme='dark'] body { background: #0c0c14; color: #f3f4f6; }
 
     .attente {
       position: fixed;
@@ -96,6 +105,33 @@
       .attente__trait::after { animation: none; width: 100%; }
     }
   </style>
+
+  <!--
+    Le thème, posé AVANT le premier pixel.
+
+    🎯 Sans ce script, la page s'affiche en clair puis bascule au démarrage
+       d'Angular — un clignotement que tout le monde remarque et que personne
+       ne sait expliquer. Il doit donc rester ICI, en ligne et synchrone : un
+       fichier séparé arriverait trop tard.
+
+    ⚠️ Le défaut est le CLAIR, et non `prefers-color-scheme`. Une boutique se
+       regarde comme une vitrine : photos sur fond clair, prix en noir sur
+       blanc. Suivre le système donnait le sombre à tout téléphone réglé ainsi,
+       et la boutique n'avait jamais l'air de ce qu'on avait dessiné.
+
+    Le try/catch n'est pas décoratif : en navigation privée, lire
+    `localStorage` LÈVE une exception sur certains navigateurs, et une
+    exception ici laisserait la page sans thème du tout.
+  -->
+  <script>
+    (function () {
+      var theme = 'light';
+      try {
+        if (localStorage.getItem('garah.theme') === 'sombre') { theme = 'dark'; }
+      } catch (e) { /* stockage bloqué : on garde le clair */ }
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
   <gb-racine>
