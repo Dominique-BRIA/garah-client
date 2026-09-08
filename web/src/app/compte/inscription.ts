@@ -5,17 +5,18 @@ import { RouterLink } from '@angular/router';
 import { messageErreur } from '../../api/erreurs';
 
 /**
- * ⚠️ DIX, et c'est le serveur qui décide.
+ * ⚠️ SIX, et c'est le serveur qui décide.
  *
- * <p>L'écran acceptait huit caractères là où l'API en exige dix. Le visiteur
+ * <p>L'écran a déjà accepté huit caractères là où l'API en exigeait dix. Le visiteur
  * remplissait tout, cliquait, et recevait « Certains champs sont invalides » —
  * une phrase qui ne dit ni lequel ni pourquoi. Beaucoup s'arrêtaient là.</p>
  *
  * <p>Une constante nommée plutôt qu'un 10 posé dans le code : la valeur
- * apparaît à trois endroits de cet écran, et trois 8 recopiés sont exactement
- * ce qui a produit le défaut.</p>
+ * apparaît à trois endroits de cet écran, et trois nombres recopiés sont
+ * exactement ce qui a produit le défaut. La valeur de référence est
+ * ServiceInscription.LONGUEUR_MOT_DE_PASSE_MIN, cote serveur.</p>
  */
-const LONGUEUR_MOT_DE_PASSE_MIN = 10;
+const LONGUEUR_MOT_DE_PASSE_MIN = 6;
 
 /**
  * La création de compte.
@@ -75,7 +76,7 @@ const LONGUEUR_MOT_DE_PASSE_MIN = 10;
         <input id="mdp" name="motDePasse" type="password" class="gb-champ" required
                autocomplete="new-password"
                [ngModel]="motDePasse()" (ngModelChange)="motDePasse.set($event)" />
-        <p class="aide">Au moins 10 caractères. Une phrase vaut mieux qu’un mot compliqué.</p>
+        <p class="aide">Au moins 6 caractères. Une phrase vaut mieux qu’un mot compliqué.</p>
 
         @if (erreur(); as m) {
           <p class="gb-alerte" role="alert">{{ m }}</p>

@@ -227,13 +227,44 @@ class ClientApi {
 
   String? get jetonRafraichissement => _rafraichissement;
 
+  /// Ce que le serveur a refusé, dit CHAMP PAR CHAMP.
+  ///
+  /// Sur une erreur de validation, il renvoie **deux** choses : un `message`
+  /// générique — « Certains champs sont invalides. » — et un objet `champs` qui
+  /// dit **lequel** et **pourquoi**.
+  ///
+  /// ⚠️ Ne lire que `message`, c'est ne montrer que la moins utile des deux.
+  ///    Sur l'inscription, cela rend la création de compte **impossible en
+  ///    pratique** : on voit « Certains champs sont invalides », on corrige au
+  ///    hasard, et on renonce. Le défaut a été trouvé sur le web, où il
+  ///    empêchait réellement de s'inscrire ; il était identique ici.
+  ///
+  /// ⚠️ Les messages du serveur sont repris TELS QUELS. Les réécrire les
+  ///    ferait diverger au premier changement de règle — le jour où le minimum
+  ///    passe de six à huit, le serveur le dira et l'application continuerait
+  ///    d'annoncer six.
   static String _messageDe(http.Response reponse) {
     try {
       final corps = jsonDecode(utf8.decode(reponse.bodyBytes));
-      if (corps is Map && corps['message'] is String) {
-        // Le serveur sait pourquoi il refuse — stock insuffisant, quantité trop
-        // grande, offre expirée. Son message est plus juste que celui qu'on
-        // inventerait ici.
+      if (corps is! Map) {
+        return 'Une erreur est survenue. Réessayez.';
+      }
+
+      final champs = corps['champs'];
+      if (champs is Map && champs.isNotEmpty) {
+        final detail = champs.values
+            .whereType<String>()
+            .where((v) => v.isNotEmpty)
+            .toList();
+        if (detail.isNotEmpty) {
+          return detail.join(' ');
+        }
+      }
+
+      // Le serveur sait pourquoi il refuse — stock insuffisant, quantité trop
+      // grande, offre expirée. Son message est plus juste que celui qu'on
+      // inventerait ici.
+      if (corps['message'] is String) {
         return corps['message'] as String;
       }
     } catch (_) {

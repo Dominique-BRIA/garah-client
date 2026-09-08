@@ -7,6 +7,7 @@ import '../modeles/catalogue.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
 import 'connexion.dart';
+import 'inscription.dart';
 import 'detail_commande.dart';
 import 'favoris.dart';
 import 'sav.dart';
@@ -146,6 +147,16 @@ class _EcranCompteState extends State<EcranCompte> {
           context,
         ).push(MaterialPageRoute(builder: (_) => const EcranConnexion())),
         child: const Text('Se connecter'),
+      ),
+      const SizedBox(height: 10),
+      // 🎯 Sans ce bouton, l'écran d'inscription n'existait pas : rien n'y
+      //    menait, et un client sans compte n'avait aucun moyen d'en créer un
+      //    depuis le téléphone.
+      OutlinedButton(
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const EcranInscription())),
+        child: const Text('Créer un compte'),
       ),
       const SizedBox(height: 24),
       const Divider(),

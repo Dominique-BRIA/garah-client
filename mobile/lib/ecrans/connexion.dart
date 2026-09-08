@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../api/client_api.dart';
+import '../charte/jetons.dart';
 import '../charte/theme.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
+import 'inscription.dart';
 
 /// La connexion.
 ///
@@ -139,6 +141,33 @@ class _EcranConnexionState extends State<EcranConnexion> {
           FilledButton(
             onPressed: _manque == null && !_envoi ? _connecter : null,
             child: Text(_envoi ? 'Connexion…' : 'Se connecter'),
+          ),
+
+          const SizedBox(height: 20),
+          // 🎯 Sans ce lien, l'écran d'inscription n'existait pas : rien n'y
+          //    menait, et un client sans compte n'avait aucun moyen d'en
+          //    créer un depuis le téléphone.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Pas encore de compte ? ',
+                style: TextStyle(fontSize: 13.5, color: context.texteAttenue),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const EcranInscription()),
+                ),
+                child: const Text(
+                  'Créer un compte',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Jetons.primaire,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
