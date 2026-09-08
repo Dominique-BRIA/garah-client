@@ -1,0 +1,60 @@
+.entete { padding: 1.25rem 1.25rem 1rem; }
+.entete h1 { margin: 0; font-size: 1.3rem; font-weight: 700; }
+.entete__compte { margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--texte-attenue); }
+
+.lignes { padding: 0 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+.ligne { padding: 0.85rem; display: flex; gap: 0.8rem; }
+
+.ligne__image {
+  width: 68px; height: 68px; flex-shrink: 0;
+  border-radius: var(--rayon-moyen);
+  background: color-mix(in srgb, var(--primaire) 8%, var(--surface-douce));
+  overflow: hidden;
+
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+
+.ligne__corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+
+.ligne__tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
+.ligne__nom { margin: 0; font-size: 0.875rem; font-weight: 600; line-height: 1.3; }
+.ligne__declinaison { margin: 0.15rem 0 0; font-size: 0.75rem; color: var(--texte-attenue); }
+
+.ligne__retirer {
+  width: 30px; height: 30px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: var(--texte-attenue); cursor: pointer;
+
+  svg { width: 16px; height: 16px; }
+  &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+}
+
+.ligne__pied { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+
+.compteur {
+  display: flex; align-items: center;
+  border: 1px solid var(--champ-bordure);
+  border-radius: var(--rayon-petit);
+  background: var(--champ-fond);
+  overflow: hidden;
+
+  button {
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; background: transparent; color: var(--texte); cursor: pointer;
+    svg { width: 15px; height: 15px; }
+  }
+}
+
+.compteur__valeur {
+  min-width: 2.1rem; text-align: center;
+  font-size: 0.9rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+
+.total { margin: 1.25rem 1.25rem 0; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.total__ligne { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.total__mention { margin: 0; font-size: 0.75rem; color: var(--texte-attenue); line-height: 1.5; }
+
+.actions { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.actions__mention { margin: 0; text-align: center; font-size: 0.75rem; color: var(--texte-attenue); }

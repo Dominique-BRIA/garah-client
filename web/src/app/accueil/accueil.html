@@ -1,0 +1,123 @@
+<header class="entete">
+  <div class="marque">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="marque__embleme">
+      <path d="M12 2.5 21 7v10l-9 4.5L3 17V7l9-4.5Z" stroke="var(--marque)" stroke-width="1.7" stroke-linejoin="round" />
+      <path d="M12 7.5 16.5 10v4L12 16.5 7.5 14v-4L12 7.5Z" fill="var(--marque)" />
+    </svg>
+    <span class="marque__nom">GARAH</span>
+  </div>
+
+  <form class="recherche" (ngSubmit)="chercher()" novalidate>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="recherche__loupe">
+      <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+      <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    </svg>
+    <input type="search" name="recherche" class="gb-champ recherche__champ"
+           placeholder="Chercher un article…" aria-label="Chercher un article"
+           [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" />
+  </form>
+</header>
+
+<!-- Ce que GARAH fait, en une phrase. Un visiteur arrivé par un lien ne sait
+     pas qu'il faut venir retirer sa commande : le lui dire ici évite la
+     déception au moment de payer. -->
+<section class="corridor">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M2 15h11V8H2v7Z" stroke="var(--marque)" stroke-width="1.6" stroke-linejoin="round" />
+    <path d="M13 11h4.3l2.7 3v1h-7v-4Z" stroke="var(--marque)" stroke-width="1.6" stroke-linejoin="round" />
+    <circle cx="6" cy="17.5" r="1.8" stroke="var(--marque)" stroke-width="1.6" />
+    <circle cx="16.5" cy="17.5" r="1.8" stroke="var(--marque)" stroke-width="1.6" />
+  </svg>
+  <div>
+    <p class="corridor__titre">Douala → Bangui</p>
+    <p class="corridor__texte">Vous retirez votre commande au point de votre choix.</p>
+  </div>
+</section>
+
+@if (categories().length > 0) {
+  <section class="bloc">
+    <p class="gb-libelle">Catégories</p>
+    <div class="puces">
+      @for (c of categories(); track c.id) {
+        <a class="puce" [routerLink]="['/catalogue']" [queryParams]="{ categorieId: c.id }">
+          {{ c.nom }}
+        </a>
+      }
+    </div>
+  </section>
+}
+
+<section class="bloc">
+  <div class="bloc__entete">
+    <h1 class="bloc__titre">Ce qui se vend</h1>
+    <a routerLink="/catalogue" class="bloc__lien">Tout voir</a>
+  </div>
+
+  @if (erreur(); as m) {
+    <div class="gb-etat">
+      <p>{{ m }}</p>
+      <button type="button" class="gb-btn gb-btn--secondaire" (click)="charger()">Réessayer</button>
+    </div>
+  } @else if (chargement()) {
+    <!-- Des cadres à la place des cartes : sur une connexion lente, un écran
+         vide fait croire à une panne, alors qu'une forme dit « ça arrive ». -->
+    <div class="grille">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="carte carte--attente" aria-hidden="true">
+          <div class="carte__image"></div>
+          <div class="carte__corps">
+            <span class="fantome fantome--large"></span>
+            <span class="fantome"></span>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (tendances().length === 0) {
+    <!-- Un catalogue neuf n'a aucune tendance : c'est normal, pas une erreur.
+         On envoie vers le catalogue plutôt que de laisser un trou. -->
+    <div class="gb-etat">
+      <p>Rien encore dans les tendances.</p>
+      <a routerLink="/catalogue" class="gb-btn gb-btn--secondaire">Parcourir le catalogue</a>
+    </div>
+  } @else {
+    <div class="grille">
+      @for (p of tendances(); track p.id) {
+        <a class="carte" [routerLink]="['/produit', p.slug]">
+          <div class="carte__image">
+            @if (p.urlPhotoPrincipale) {
+              <!-- `lazy` et des dimensions : sans elles, la page saute quand
+                   chaque image arrive, et on clique sur la mauvaise carte. -->
+              <img [src]="p.urlPhotoPrincipale" [alt]="p.nom" loading="lazy" decoding="async" />
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="carte__silhouette">
+                <path d="M8 4 5 6v14h14V6l-3-2-4 2-4-2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+              </svg>
+            }
+          </div>
+          <div class="carte__corps">
+            <p class="carte__nom">{{ p.nom }}</p>
+            @if (p.marchandNom) {
+              <p class="carte__vendeur">{{ p.marchandNom }}</p>
+            }
+            <p class="carte__prix">
+              <span class="gb-attenue carte__des">dès</span>
+              {{ montant(p.prixMin, p.devise) }}
+            </p>
+          </div>
+        </a>
+      }
+    </div>
+  }
+</section>
+
+<!-- La seule page qu'on atteint sans compte. Elle mérite sa place ici : un
+     client qui attend un colis n'ouvre pas la boutique pour acheter. -->
+<a routerLink="/suivi" class="suivi">
+  <div>
+    <p class="suivi__titre">Suivre un colis</p>
+    <p class="suivi__texte">Sans compte, avec votre numéro de suivi.</p>
+  </div>
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+</a>

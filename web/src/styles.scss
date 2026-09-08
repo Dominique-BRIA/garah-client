@@ -1,0 +1,198 @@
+// =============================================================================
+// La boutique GARAH — styles de base
+// =============================================================================
+// ⚠️ Les JETONS ne sont pas ici : ils sont engendrés depuis charte/jetons.json.
+//    Ce fichier ne fait que les utiliser. Y écrire une couleur en dur ferait
+//    diverger le web du mobile, sans que rien ne le signale.
+//
+//        node charte/engendrer.mjs
+// =============================================================================
+
+@use 'theme/jetons';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--police);
+  // `pretty` évite les lignes veuves dans les titres de produits, qui sont
+  // courts et se coupent mal.
+  text-wrap: pretty;
+}
+
+// ⚠️ La boutique se lit AU TÉLÉPHONE. On borne la largeur et on centre :
+//    sans cela, une fiche produit s'étale sur 1 400 px et devient illisible
+//    pour les rares visiteurs sur ordinateur.
+.gb-page {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+// --- Boutons -----------------------------------------------------------------
+// Reprend exactement le geste du back-office : rayon 8, dégradé à 135°, ombre
+// portée colorée. La marque doit se reconnaître d'une application à l'autre.
+.gb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  // ⚠️ La hauteur minimale n'est pas cosmétique : en dessous de 44 px on rate
+  //    le bouton une fois sur trois, et sur un écran de commande rater
+  //    signifie recommencer.
+  min-height: var(--cible-tactile-min);
+  padding: 0.625rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-petit);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primaire);
+    outline-offset: 2px;
+  }
+}
+
+.gb-btn--primaire {
+  background: linear-gradient(135deg, var(--primaire) 0%, var(--primaire-sombre) 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primaire) 30%, transparent);
+}
+
+.gb-btn--secondaire {
+  background: var(--surface-douce);
+  border-color: var(--verre-bordure);
+  color: var(--texte);
+}
+
+.gb-btn--plein {
+  width: 100%;
+  min-height: 50px;
+}
+
+// --- Cartes ------------------------------------------------------------------
+.gb-carte {
+  background: var(--verre-fond);
+  border: 1px solid var(--verre-bordure);
+  border-radius: var(--rayon-grand);
+  box-shadow: var(--verre-ombre);
+}
+
+// --- Champs ------------------------------------------------------------------
+.gb-champ {
+  width: 100%;
+  min-height: var(--cible-tactile-min);
+  padding: 0.7rem 0.95rem;
+  background: var(--champ-fond);
+  border: 1px solid var(--champ-bordure);
+  border-radius: var(--rayon-petit);
+  color: var(--texte);
+  font-family: inherit;
+  // ⚠️ 16px MINIMUM sur un champ de saisie. En dessous, iOS zoome
+  //    automatiquement à la mise au point et l'utilisateur se retrouve avec
+  //    une page agrandie qu'il doit repincer. C'est le seul endroit où la
+  //    taille du texte est une contrainte technique.
+  font-size: 16px;
+
+  &::placeholder {
+    color: var(--texte-attenue);
+  }
+
+  &:focus {
+    outline: none;
+    background: var(--champ-fond-actif);
+    border-color: var(--primaire);
+  }
+}
+
+.gb-libelle {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-attenue);
+}
+
+// --- Étiquettes --------------------------------------------------------------
+.gb-etiquette {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@each $nom, $jeton in (succes: --succes, danger: --danger, alerte: --alerte, info: --info) {
+  .gb-etiquette--#{$nom} {
+    background: color-mix(in srgb, var(#{$jeton}) 12%, transparent);
+    color: var(#{$jeton});
+    border-color: color-mix(in srgb, var(#{$jeton}) 25%, transparent);
+  }
+}
+
+.gb-etiquette--neutre {
+  background: var(--surface-douce);
+  color: var(--texte-attenue);
+  border-color: var(--verre-bordure);
+}
+
+// --- Montants ----------------------------------------------------------------
+// Les chiffres alignés en colonne : sans `tabular-nums`, « 106 000 » et
+// « 98 000 » ne se comparent pas d'un coup d'œil dans un récapitulatif.
+.gb-montant {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.gb-mono {
+  font-family: var(--police-mono);
+}
+
+// --- États -------------------------------------------------------------------
+.gb-etat {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--texte-attenue);
+  line-height: 1.6;
+}
+
+.gb-attenue {
+  color: var(--texte-attenue);
+}
+
+.gb-alerte {
+  padding: 0.85rem 1rem;
+  border-radius: var(--rayon-petit);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--danger);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}

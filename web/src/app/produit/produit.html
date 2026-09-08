@@ -1,0 +1,171 @@
+@if (erreur(); as m) {
+  <div class="gb-etat">
+    <p>{{ m }}</p>
+    <div class="etat__boutons">
+      <button type="button" class="gb-btn gb-btn--secondaire" (click)="charger()">Réessayer</button>
+      <a routerLink="/catalogue" class="gb-btn gb-btn--secondaire">Voir le catalogue</a>
+    </div>
+  </div>
+} @else if (chargement()) {
+  <div class="gb-etat"><p>Chargement…</p></div>
+} @else if (fiche(); as f) {
+
+  <div class="photo">
+    @if (photoPrincipale(); as url) {
+      <img [src]="url" [alt]="f.nom" />
+    } @else {
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="photo__silhouette">
+        <path d="M8 4 5 6v14h14V6l-3-2-4 2-4-2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+      </svg>
+    }
+    <a routerLink="/catalogue" class="photo__retour" aria-label="Retour au catalogue">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="m14 6-6 6 6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </a>
+  </div>
+
+  <div class="titre">
+    <h1>{{ f.nom }}</h1>
+    <p class="titre__vendeur">
+      Vendu par <strong>{{ f.marchandNom ?? 'vendeur inconnu' }}</strong>
+    </p>
+  </div>
+
+  @if (declinaison(); as d) {
+
+    <!-- ================================================================== -->
+    <!-- LA GRILLE DE PALIERS — avant le bouton d'achat, et c'est le sujet.  -->
+    <!-- ================================================================== -->
+    @if (d.paliers.length > 0) {
+      <section class="gb-carte paliers">
+        <div class="paliers__entete">
+          <p class="gb-libelle">Prix par quantité</p>
+          <!-- Le MOQ ne s'affiche QUE s'il dépasse 1 : ailleurs, c'est du
+               bruit sur toutes les fiches. -->
+          @if (minimumAffichable(); as minimum) {
+            <span class="gb-etiquette gb-etiquette--neutre">Min. {{ minimum }}</span>
+          }
+        </div>
+
+        <div class="paliers__grille">
+          @for (p of d.paliers; track p.quantiteMin) {
+            <div class="palier" [class.palier--actif]="estPalierActif(p)">
+              <p class="palier__plage">{{ plage(p) }}</p>
+              <p class="palier__prix">{{ montant(p.prixUnitaire) }}</p>
+              <p class="palier__unite">la pièce</p>
+            </div>
+          }
+        </div>
+
+        <!-- L'invite au palier suivant. Absente si le stock ne suit pas. -->
+        @if (prochainPalier(); as suivant) {
+          <p class="invite">
+            Encore <strong>{{ manquePour(suivant) }}</strong> et le prix passe à
+            <strong>{{ montant(suivant.prixUnitaire) }}</strong>.
+          </p>
+        }
+      </section>
+    } @else {
+      <!-- Sans tarif, la déclinaison n'est pas achetable. Le DIRE : un bouton
+           désactivé sans explication fait croire à une panne. -->
+      <p class="gb-alerte indisponible">
+        Cet article n’a pas encore de prix. Il n’est pas commandable pour le moment.
+      </p>
+    }
+
+    <!-- Déclinaisons -->
+    @if (f.declinaisons.length > 1) {
+      <section class="bloc">
+        <div class="bloc__entete">
+          <p class="gb-libelle">Déclinaison</p>
+          <span class="bloc__choix">{{ d.libelle }}</span>
+        </div>
+        <div class="choix">
+          @for (v of f.declinaisons; track v.id) {
+            <button type="button" class="option"
+                    [class.option--active]="v.id === d.id"
+                    [class.option--epuisee]="!achetable(v)"
+                    [disabled]="!achetable(v)"
+                    (click)="choisir(v)">
+              {{ v.libelle }}
+            </button>
+          }
+        </div>
+        <!-- Une déclinaison épuisée reste VISIBLE, barrée : la masquer ferait
+             croire qu'elle n'existe pas, et chercher ailleurs. -->
+        <p class="bloc__aide">Les déclinaisons barrées sont épuisées.</p>
+      </section>
+    }
+
+    <!-- Quantité et sous-total -->
+    @if (d.paliers.length > 0) {
+      <section class="gb-carte quantite">
+        <div class="quantite__ligne">
+          <div>
+            <p class="quantite__titre">Quantité</p>
+            <p class="quantite__stock">{{ d.disponible }} disponible(s)</p>
+          </div>
+          <div class="compteur">
+            <button type="button" (click)="changerQuantite(-1)" aria-label="Retirer une unité">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+            </button>
+            <span class="compteur__valeur">{{ quantite() }}</span>
+            <button type="button" (click)="changerQuantite(1)" aria-label="Ajouter une unité">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="quantite__separateur"></div>
+
+        <div class="quantite__ligne">
+          <div>
+            <p class="gb-libelle">Sous-total</p>
+            @if (palierActif(); as p) {
+              <p class="quantite__detail">{{ quantite() }} × {{ montant(p.prixUnitaire) }}</p>
+            }
+          </div>
+          <p class="gb-montant sousTotal">{{ montant(sousTotal()) }}</p>
+        </div>
+
+        <!-- Le prix affiché n'engage à rien : il est figé à la commande. -->
+        <p class="quantite__mention">
+          Prix du jour, hors acheminement. Le montant définitif est figé au moment
+          de la commande.
+        </p>
+      </section>
+    }
+
+    @if (f.description) {
+      <section class="bloc">
+        <p class="gb-libelle">Description</p>
+        <p class="description">{{ f.description }}</p>
+      </section>
+    }
+
+    <!-- Actions. « Négocier » est au MÊME niveau qu'« Ajouter » : c'est un
+         vrai flux commercial, pas une messagerie. -->
+    <div class="actions">
+      <button type="button" class="gb-btn gb-btn--secondaire actions__negocier" (click)="negocier()">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5 5h14v10H9l-4 4V5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+        </svg>
+        Négocier
+      </button>
+
+      @if (ajoute()) {
+        <a routerLink="/panier" class="gb-btn gb-btn--primaire actions__panier">
+          Voir le panier
+        </a>
+      } @else {
+        <button type="button" class="gb-btn gb-btn--primaire actions__panier"
+                [disabled]="!achetable(d)" (click)="ajouterAuPanier()">
+          Ajouter au panier
+        </button>
+      }
+    </div>
+  } @else {
+    <p class="gb-etat">Cet article n’a aucune déclinaison à vendre.</p>
+  }
+}

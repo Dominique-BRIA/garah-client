@@ -1,0 +1,76 @@
+<header class="entete">
+  <h1>Mon panier</h1>
+  <p class="entete__compte">{{ panier.nombreArticles() }} article(s)</p>
+</header>
+
+@if (vide()) {
+  <div class="gb-etat">
+    <p>Votre panier est vide.</p>
+    <a routerLink="/catalogue" class="gb-btn gb-btn--secondaire">Parcourir le catalogue</a>
+  </div>
+} @else {
+  <div class="lignes">
+    @for (l of panier.lignes(); track l.varianteId) {
+      <div class="gb-carte ligne">
+        <div class="ligne__image">
+          @if (l.urlPhoto) { <img [src]="l.urlPhoto" [alt]="l.nomProduit" loading="lazy" /> }
+        </div>
+
+        <div class="ligne__corps">
+          <div class="ligne__tete">
+            <div>
+              <p class="ligne__nom">{{ l.nomProduit }}</p>
+              <p class="ligne__declinaison">{{ l.libelleDeclinaison }}</p>
+            </div>
+            <button type="button" class="ligne__retirer"
+                    (click)="panier.retirer(l.varianteId)"
+                    [attr.aria-label]="'Retirer ' + l.nomProduit">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M6 6 18 18M18 6 6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="ligne__pied">
+            <div class="compteur">
+              <button type="button" (click)="panier.definirQuantite(l.varianteId, l.quantite - 1)"
+                      aria-label="Moins">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+              </button>
+              <span class="compteur__valeur">{{ l.quantite }}</span>
+              <button type="button" (click)="panier.definirQuantite(l.varianteId, l.quantite + 1)"
+                      aria-label="Plus">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+              </button>
+            </div>
+            <p class="gb-montant">{{ montant(l.prixIndicatif * l.quantite) }}</p>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <section class="gb-carte total">
+    <div class="total__ligne">
+      <span class="gb-attenue">Articles (estimation)</span>
+      <span class="gb-montant">{{ montant(panier.totalIndicatif()) }}</span>
+    </div>
+    <!-- 🎯 On ANNONCE que ce n'est pas le prix final. Les frais dependent du
+         point de recuperation, choisi a l'etape suivante, et les paliers de
+         quantite ne sont appliques que par le serveur. -->
+    <p class="total__mention">
+      Estimation hors acheminement. Le prix définitif, remises de quantité et
+      frais compris, s’affiche à l’étape suivante.
+    </p>
+  </section>
+
+  <div class="actions">
+    @if (session.connecte()) {
+      <a routerLink="/commande" class="gb-btn gb-btn--primaire gb-btn--plein">Passer la commande</a>
+    } @else {
+      <a routerLink="/connexion" [queryParams]="{ suite: '/commande' }"
+         class="gb-btn gb-btn--primaire gb-btn--plein">Se connecter pour commander</a>
+      <p class="actions__mention">Votre panier vous suit : rien ne sera perdu.</p>
+    }
+  </div>
+}

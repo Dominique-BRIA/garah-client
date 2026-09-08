@@ -1,0 +1,90 @@
+.entete { padding: 1.5rem 1.25rem 1rem; }
+.entete h1 { margin: 0; font-size: 1.3rem; font-weight: 700; }
+
+.entete__aide {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--texte-attenue);
+  line-height: 1.5;
+}
+
+.recherche {
+  padding: 0 1.25rem 1.25rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+// À chasse fixe : un numéro se recopie caractère par caractère depuis un SMS,
+// et une police proportionnelle rend un 1 et un l indiscernables.
+.recherche__champ {
+  font-family: var(--police-mono);
+  letter-spacing: 0.04em;
+}
+
+.resultat { margin: 0 1.25rem; padding: 1.1rem; }
+
+.resultat__numero {
+  margin: 0 0 1.1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.parcours { list-style: none; margin: 0; padding: 0; }
+
+.etape {
+  position: relative;
+  padding: 0 0 1.4rem 1.6rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0.28rem;
+    top: 0.8rem;
+    bottom: 0;
+    width: 1px;
+    background: var(--verre-bordure);
+  }
+
+  &:last-child { padding-bottom: 0; }
+  &:last-child::before { display: none; }
+}
+
+.etape__puce {
+  position: absolute;
+  left: 0;
+  top: 0.3rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  border: 2px solid var(--verre-bordure);
+  background: var(--fond);
+}
+
+// La dernière étape répond à la question posée : elle porte la couleur, les
+// précédentes restent grises. Tout colorer ne distinguerait rien.
+.etape--actuelle {
+  .etape__puce { border-color: var(--primaire); background: var(--primaire); }
+  .etape__titre { font-weight: 700; color: var(--texte); }
+}
+
+.etape--anomalie {
+  .etape__puce { border-color: var(--alerte); background: var(--alerte); }
+  .etape__titre { color: var(--alerte); }
+}
+
+.etape__titre {
+  margin: 0 0 0.1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texte-attenue);
+}
+
+.etape__lieu { margin: 0; font-size: 0.85rem; }
+
+.etape__date {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  color: var(--texte-attenue);
+}
+
+.etape__note { margin: 0.35rem 0 0; font-size: 0.8rem; line-height: 1.5; }

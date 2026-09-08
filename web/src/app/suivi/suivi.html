@@ -1,0 +1,49 @@
+<header class="entete">
+  <h1>Suivre un colis</h1>
+  <p class="entete__aide">Le numéro figure sur votre bordereau ou dans le message reçu.</p>
+</header>
+
+<form class="recherche" (ngSubmit)="soumettre()" novalidate>
+  <input class="gb-champ recherche__champ" name="numero" autocomplete="off" spellcheck="false"
+         maxlength="40" placeholder="Numéro de suivi" aria-label="Numéro de suivi"
+         [ngModel]="saisie()" (ngModelChange)="saisie.set($event)" />
+  <button type="submit" class="gb-btn gb-btn--primaire"
+          [disabled]="!saisie().trim() || chargement()">
+    @if (chargement()) { … } @else { Suivre }
+  </button>
+</form>
+
+@if (erreur(); as m) {
+  <div class="gb-etat"><p>{{ m }}</p></div>
+} @else if (trajet(); as t) {
+  <section class="gb-carte resultat">
+    <p class="gb-libelle">Colis</p>
+    <p class="resultat__numero gb-mono">{{ t.numeroSuivi }}</p>
+
+    @if (t.etapes.length === 0) {
+      <!-- Un colis enregistré mais jamais scanné. Le DIRE : une page vide se
+           lit comme une panne. -->
+      <p class="gb-attenue">
+        Ce colis est enregistré, mais n’a pas encore quitté son point de départ.
+        Revenez d’ici quelques heures.
+      </p>
+    } @else {
+      <ol class="parcours">
+        @for (e of recentesDabord(); track e.dateHeure; let premier = $first) {
+          <li class="etape" [class.etape--actuelle]="premier"
+              [class.etape--anomalie]="estAnomalie(e.type)">
+            <span class="etape__puce" aria-hidden="true"></span>
+            <div>
+              <p class="etape__titre">{{ libelle(e.type) }}</p>
+              <p class="etape__lieu">{{ ou(e) }}</p>
+              <p class="etape__date">{{ quand(e.dateHeure) }}</p>
+              @if (e.observation) {
+                <p class="etape__note">{{ e.observation }}</p>
+              }
+            </div>
+          </li>
+        }
+      </ol>
+    }
+  </section>
+}

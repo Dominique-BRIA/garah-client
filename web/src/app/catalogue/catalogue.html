@@ -1,0 +1,70 @@
+<header class="entete">
+  <h1>Catalogue</h1>
+  <p class="entete__compte">
+    @if (chargement()) { Chargement… }
+    @else if (filtre(); as q) { {{ produits().length }} résultat(s) pour « {{ q }} » }
+    @else { {{ total() }} article(s) }
+  </p>
+</header>
+
+<form class="recherche" (ngSubmit)="chercher()" novalidate>
+  <input type="search" name="recherche" class="gb-champ"
+         placeholder="Nom, vendeur, catégorie…" aria-label="Chercher"
+         [ngModel]="saisie()" (ngModelChange)="saisie.set($event)" />
+  @if (filtre()) {
+    <button type="button" class="gb-btn gb-btn--secondaire" (click)="effacer()">Effacer</button>
+  }
+</form>
+
+@if (erreur(); as m) {
+  <div class="gb-etat">
+    <p>{{ m }}</p>
+    <button type="button" class="gb-btn gb-btn--secondaire" (click)="charger(true)">Réessayer</button>
+  </div>
+} @else if (chargement()) {
+  <div class="gb-etat"><p>Chargement…</p></div>
+} @else if (produits().length === 0) {
+  <div class="gb-etat">
+    @if (filtre(); as q) {
+      <p>Rien ne correspond à « {{ q }} ».</p>
+      <!-- ⚠️ On DIT que la recherche ne porte que sur les articles déjà
+           chargés : sans cette phrase, on conclut que l'article n'existe pas. -->
+      <p class="gb-attenue">La recherche porte sur les articles déjà affichés. Chargez la suite pour élargir.</p>
+    } @else {
+      <p>Le catalogue est vide pour le moment.</p>
+    }
+  </div>
+} @else {
+  <div class="grille">
+    @for (p of produits(); track p.id) {
+      <a class="carte" [routerLink]="['/produit', p.slug]">
+        <div class="carte__image">
+          @if (p.urlPhotoPrincipale) {
+            <img [src]="p.urlPhotoPrincipale" [alt]="p.nom" loading="lazy" decoding="async" />
+          }
+        </div>
+        <div class="carte__corps">
+          <p class="carte__nom">{{ p.nom }}</p>
+          @if (p.marchandNom) { <p class="carte__vendeur">{{ p.marchandNom }}</p> }
+          <p class="carte__prix">
+            <span class="carte__des gb-attenue">dès</span> {{ montant(p.prixMin, p.devise) }}
+          </p>
+          @if (p.quantiteDisponible === 0) {
+            <!-- Un article epuise reste VISIBLE : le masquer ferait croire
+                 qu'il n'existe pas, et chercher ailleurs. -->
+            <span class="gb-etiquette gb-etiquette--neutre">Épuisé</span>
+          }
+        </div>
+      </a>
+    }
+  </div>
+
+  @if (!derniere()) {
+    <div class="suite">
+      <button type="button" class="gb-btn gb-btn--secondaire" (click)="voirLaSuite()"
+              [disabled]="chargementSuite()">
+        @if (chargementSuite()) { Chargement… } @else { Voir la suite }
+      </button>
+    </div>
+  }
+}
