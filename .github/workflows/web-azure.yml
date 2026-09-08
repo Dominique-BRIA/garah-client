@@ -1,0 +1,87 @@
+# =============================================================================
+# La boutique sur Azure Static Web Apps — l'offre GRATUITE
+# =============================================================================
+# 🎯 CE WORKFLOW EXISTE POUR COMPARER, PAS POUR REMPLACER.
+#
+#    La boutique part aussi sur Vercel (voir vercel.json). Les deux tournent
+#    en parallèle le temps de mesurer lequel répond le mieux depuis Douala et
+#    Bangui — ce qui ne se devine pas depuis une carte de points de présence :
+#    ce qui compte est le chemin réel, pas le nombre de villes annoncées.
+#
+#    Une fois le choix fait, on SUPPRIME l'autre. Deux déploiements d'une même
+#    application qui vivent côte à côte finissent par diverger, et un jour
+#    quelqu'un teste sur celui qui n'est plus servi.
+#
+# -----------------------------------------------------------------------------
+# ⚠️ CE QU'IL FAUT POSER AVANT QUE ÇA MARCHE
+# -----------------------------------------------------------------------------
+# 1. Créer la ressource : portail Azure > Static Web Apps > Créer,
+#    offre **Gratuit**, source « Autre » (surtout pas « GitHub » : le portail
+#    écrirait son propre workflow à côté de celui-ci).
+#
+# 2. Copier le jeton de déploiement (Aperçu > Gérer le jeton de déploiement)
+#    dans les secrets du dépôt, sous AZURE_STATIC_WEB_APPS_API_TOKEN.
+#
+# 3. Ajouter le domaine obtenu à GARAH_CORS_ORIGINS, dans les réglages de
+#    l'App Service `garah-api`. ⚠️ Sans cela, la boutique s'affiche
+#    parfaitement et TOUS les appels échouent — le symptôme à l'écran est
+#    « Pas de connexion », qui fait chercher du côté du réseau alors que le
+#    serveur répond très bien.
+# =============================================================================
+
+name: Boutique — Azure
+
+on:
+  push:
+    branches: [main]
+    # Le mobile et la charte ne déclenchent rien ici : chaque passage inutile
+    # est du temps de machine et une notification de plus qu'on finit par
+    # ignorer.
+    paths:
+      - 'web/**'
+      - '.github/workflows/web-azure.yml'
+  workflow_dispatch:
+
+jobs:
+  deployer:
+    name: Construire et déployer
+    runs-on: ubuntu-latest
+    # Sans jeton, l'action échoue avec un message peu clair. On saute plutôt,
+    # ce qui laisse le dépôt vert tant que la ressource n'existe pas.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.AZURE_SWA_ACTIVE == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # ⚠️ `npm ci` et non `npm install` : il installe EXACTEMENT ce que
+      #    package-lock.json fige. `install` peut résoudre une version plus
+      #    récente et déployer autre chose que ce qui a été testé.
+      - name: Dépendances
+        run: npm ci
+        working-directory: web
+
+      - name: Construire
+        run: npm run build
+        working-directory: web
+
+      - name: Déployer
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          # La construction est DÉJÀ faite : on ne donne qu'un dossier.
+          #
+          # ⚠️ `skip_app_build` est indispensable. Sans lui, l'action relance
+          #    sa propre détection Oryx, qui ne connaît pas le `web/` de ce
+          #    dépôt et construit soit rien, soit autre chose.
+          skip_app_build: true
+          app_location: 'web/dist/garah-boutique/browser'
+          # Aucune fonction : l'API est ailleurs, sur App Service.
+          api_location: ''
+          output_location: ''
