@@ -1,0 +1,71 @@
+// ENGENDRÉ PAR charte/engendrer.mjs — NE PAS MODIFIER À LA MAIN.
+//
+// Toute correction se fait dans charte/jetons.json, puis :
+//     node charte/engendrer.mjs
+//
+// Modifier ce fichier directement fait diverger le web et le mobile,
+// et la prochaine exécution efface le changement sans prévenir.
+
+:root {
+  // La marque et les intentions ne changent pas avec le thème :
+  // un danger n'est pas moins dangereux la nuit.
+  --marque: #12a594;
+  --primaire: #6366f1;
+  --primaire-clair: #818cf8;
+  --primaire-sombre: #4f46e5;
+  --accent: #aa3bff;
+  --accent-secondaire: #3b82f6;
+  --succes: #10b981;
+  --alerte: #f59e0b;
+  --danger: #ef4444;
+  --info: #0ea5e9;
+
+  // Les rayons, en pixels.
+  --rayon-petit: 8px;
+  --rayon-moyen: 12px;
+  --rayon-grand: 20px;
+
+  --police: 'Outfit', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --police-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  // La plus petite cible tactile acceptable.
+  --cible-tactile-min: 44px;
+
+  // Le thème clair, par défaut.
+  --fond: #f8fafc;
+  --texte: #0f172a;
+  --texte-attenue: #64748b;
+  --surface: #ffffff;
+  --surface-douce: rgba(15, 23, 42, 0.04);
+  --surface-douce-survol: #f1f5f9;
+  --verre-fond: rgba(255, 255, 255, 0.7);
+  --verre-bordure: rgba(226, 232, 240, 0.8);
+  --verre-ombre: 0 8px 32px rgba(15, 23, 42, 0.05);
+  --champ-fond: rgba(255, 255, 255, 0.8);
+  --champ-fond-actif: #ffffff;
+  --champ-bordure: rgba(0, 0, 0, 0.1);
+}
+
+@mixin jetons-sombres {
+  --fond: #0c0c14;
+  --texte: #f3f4f6;
+  --texte-attenue: #9ca3af;
+  --surface: #12121e;
+  --surface-douce: rgba(255, 255, 255, 0.05);
+  --surface-douce-survol: #1a1a2e;
+  --verre-fond: rgba(18, 18, 30, 0.75);
+  --verre-bordure: rgba(170, 59, 255, 0.15);
+  --verre-ombre: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --champ-fond: rgba(255, 255, 255, 0.03);
+  --champ-fond-actif: rgba(26, 26, 42, 0.95);
+  --champ-bordure: rgba(255, 255, 255, 0.1);
+}
+
+// ⚠️ La garde `:not([data-theme="light"])` est indispensable : sans elle,
+//    forcer le mode clair sur un système en sombre donne quand même le
+//    thème sombre, et la bascule paraît cassée.
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { @include jetons-sombres; }
+}
+
+:root[data-theme='dark'] { @include jetons-sombres; }

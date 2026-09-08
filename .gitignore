@@ -1,0 +1,38 @@
+# --- Secrets ---------------------------------------------------------------
+# ⚠️ JAMAIS de secret dans ce dépôt. Le client est PUBLIC par nature : tout ce
+#    qu'il embarque part dans le navigateur ou dans le .apk, et s'y lit.
+#    Les seules valeurs propres à un environnement sont des URL d'API.
+.env
+.env.*
+!.env.example
+
+# --- Web (Angular) ---------------------------------------------------------
+node_modules/
+web/node_modules/
+web/dist/
+web/.angular/
+web/coverage/
+*.log
+npm-debug.log*
+
+# --- Mobile (Flutter) ------------------------------------------------------
+# Le .apk sort de GitHub Actions, jamais d'ici : rien de construit ne se
+# versionne.
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/pubspec.lock
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+*.iml
+
+# --- Éditeurs ---------------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
