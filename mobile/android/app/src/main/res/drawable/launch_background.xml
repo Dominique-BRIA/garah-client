@@ -7,20 +7,32 @@
      première image, et sans cet écran on regarde un rectangle blanc — ou noir —
      sans savoir si l'application s'ouvre ou si elle a planté.
 
-    Le LOGO y est, et non le nom : à cette taille et pendant ce temps-là, une
-  forme se reconnaît, un mot se lit. C'est la même calebasse que partout
-  ailleurs.
+  Le LOGO y est, et non le nom : à cette taille et pendant ce temps-là, une
+  forme se reconnaît, un mot se lit.
+
+  ⚠️ UN <item>, ET SURTOUT PAS UN <bitmap>.
+
+     <bitmap> attend une image MATRICIELLE. La calebasse est un vecteur : la
+     balise ne l'affiche pas, et l'écran d'ouverture ne montrait donc que son
+     fond. Rien ne le signale — pas d'erreur, pas d'avertissement, juste un
+     logo absent qu'on met du temps à remarquer parce qu'il ne dure qu'une
+     seconde.
+
+     Un <item> avec une taille et une gravité fait le travail. Les attributs
+     android:width / android:height sur un item d'une layer-list demandent
+     l'API 23 ; le minimum de l'application est 24.
 
   ⚠️ La couleur de fond est celle de la charte, écrite en dur faute de mieux :
      Android lit ce fichier avant que Dart n'existe. Elle doit rester égale à
-     `clair.fond` / `sombre.fond` de charte/jetons.json.
+     `clair.fond` / `sombre.fond` de charte/jetons.json — c'est
+     values/couleurs.xml et values-night/couleurs.xml qui les portent.
 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/fond_ouverture" />
 
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/marque_garah" />
-    </item>
+    <item
+        android:drawable="@drawable/marque_garah"
+        android:gravity="center"
+        android:width="120dp"
+        android:height="120dp" />
 </layer-list>

@@ -6,4 +6,14 @@
 -->
 <resources>
     <color name="fond_ouverture">#F8FAFC</color>
+
+    <!--
+      Le fond de l icone de lancement.
+
+      ⚠️ Il ne suit PAS le theme, contrairement au fond de l ecran d ouverture :
+         une icone doit se reconnaitre sur n importe quel fond d ecran, et son
+         apparence ne peut pas dependre d un reglage du telephone. C est la
+         meme raison qui fait que le vert de la marque est une constante.
+    -->
+    <color name="fond_icone">#F8FAFC</color>
 </resources>

@@ -44,7 +44,8 @@
     "verreOmbre": "0 8px 32px rgba(15, 23, 42, 0.05)",
     "champFond": "rgba(255, 255, 255, 0.8)",
     "champFondActif": "#ffffff",
-    "champBordure": "rgba(0, 0, 0, 0.18)"
+    "champBordure": "rgba(0, 0, 0, 0.18)",
+  "accentTitre": "#2E0F52"
   },
 
   "sombre": {
@@ -59,7 +60,8 @@
     "verreOmbre": "0 8px 32px rgba(0, 0, 0, 0.4)",
     "champFond": "rgba(255, 255, 255, 0.03)",
     "champFondActif": "rgba(26, 26, 42, 0.95)",
-    "champBordure": "rgba(255, 255, 255, 0.18)"
+    "champBordure": "rgba(255, 255, 255, 0.18)",
+  "accentTitre": "#AA3BFF"
   },
 
   "rayons": {

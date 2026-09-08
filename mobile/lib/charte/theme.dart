@@ -224,4 +224,19 @@ extension CouleursGarah on BuildContext {
 
   Color get surfaceDouce =>
       estSombre ? Jetons.sombreSurfaceDouce : Jetons.clairSurfaceDouce;
+
+  /// Le violet du « AH » de GARAH.
+  ///
+  /// ⚠️ Il DÉPEND DU THÈME, contrairement au vert de la marque.
+  ///
+  ///    En clair, c'est un violet presque noir, qui pose le nom avec autorité
+  ///    sur un fond blanc. La même valeur sur le fond sombre (#0C0C14)
+  ///    disparaîtrait purement et simplement : « GAR » resterait, « AH »
+  ///    s'effacerait. Le sombre reprend donc l'accent vif.
+  ///
+  ///    Le vert, lui, ne bouge pas : c'est une constante de la marque, et une
+  ///    marque qui change de couleur selon le réglage du téléphone cesse d'en
+  ///    être une.
+  Color get accentTitre =>
+      estSombre ? Jetons.sombreAccentTitre : Jetons.clairAccentTitre;
 }

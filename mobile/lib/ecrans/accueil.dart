@@ -137,20 +137,24 @@ class _EcranAccueilState extends State<EcranAccueil> {
         //    Les deux valeurs viennent des jetons : les écrire à la main ici
         //    ferait diverger la vitrine du reste au premier ajustement.
         titleSpacing: 16,
-        title: const Text.rich(
+        title: Text.rich(
           TextSpan(
             children: [
-              TextSpan(
+              const TextSpan(
                 text: 'GAR',
                 style: TextStyle(color: Jetons.marque),
               ),
               TextSpan(
                 text: 'AH',
-                style: TextStyle(color: Jetons.accent),
+                // ⚠️ `accentTitre` et non `accent` : un violet presque noir
+                //    sur fond clair, l'accent vif sur fond sombre. La même
+                //    valeur pour les deux ferait disparaître « AH » dans l'un
+                //    des deux thèmes — voir CouleursGarah.accentTitre.
+                style: TextStyle(color: context.accentTitre),
               ),
             ],
           ),
-          style: TextStyle(
+          style: const TextStyle(
             // 26 au lieu de 18 : c'est le nom de la boutique, pas un titre
             // d'écran. Il n'y a rien au-dessus de lui.
             fontSize: 26,

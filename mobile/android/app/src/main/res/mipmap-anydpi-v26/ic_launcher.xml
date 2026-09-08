@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  L ICONE ADAPTATIVE — Android 8 et au-dela.
+
+  🎯 Le lanceur applique SA PROPRE FORME : cercle, carre arrondi, goutte,
+     trefle. Une icone matricielle unique se retrouve rognee n importe comment
+     selon le constructeur. Ici, on donne un fond et un dessin, et le systeme
+     decoupe ce qu il veut.
+
+  ⚠️ Les PNG de mipmap-mdpi a mipmap-xxxhdpi RESTENT indispensables : Android 7
+     et anterieurs ne connaissent pas ce format, et le minimum de l application
+     descend plus bas. Les supprimer donnerait une icone vide sur ces
+     appareils-la, qu on n a evidemment pas sous la main pour le voir.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/fond_icone" />
+    <foreground android:drawable="@drawable/marque_garah_pleine" />
+</adaptive-icon>
