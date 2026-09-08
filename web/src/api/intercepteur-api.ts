@@ -92,6 +92,19 @@ function jetonCourant(): string | null {
   return jetonEnMemoire;
 }
 
+/**
+ * Cet appel va-t-il vers NOTRE API ?
+ *
+ * <p>⚠️ Le test sur {@code base} est gardé par {@code base !== ''}, et ce
+ * n'est pas de la prudence : en développement la base est <b>vide</b>, pour
+ * que les requêtes restent relatives et passent par le proxy. Or
+ * {@code "https://f003.backblazeb2.com/…".startsWith("")} vaut
+ * <b>vrai</b> — sans cette garde, l'intercepteur joindrait le jeton et les
+ * cookies de session à chaque image chargée depuis Backblaze.</p>
+ *
+ * <p>C'est le genre de fuite qui ne casse rien : les images s'afficheraient,
+ * et le jeton partirait chez un tiers à chaque photo de produit.</p>
+ */
 function estAppelApi(url: string, base: string): boolean {
-  return url.startsWith('/api/') || url.startsWith(base);
+  return url.startsWith('/api/') || (base !== '' && url.startsWith(base));
 }

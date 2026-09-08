@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://garah-api-anfeapebbth7h7an.francecentral-01.azurewebsites.net",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  }
+}

@@ -1,15 +1,23 @@
 /**
  * L'environnement de DEVELOPPEMENT.
  *
- * ⚠️ Vise l'API DEPLOYEE, pas un serveur local — comme le back-office.
+ * 🎯 L'URL est VIDE, et c'est deliberе : les requetes restent RELATIVES
+ * (`/api/produits`), donc elles partent vers le serveur de developpement, qui
+ * les transmet a Azure via `proxy.conf.json`.
  *
- *    Consequence a connaitre : les donnees que l'on voit en developpant sont
- *    celles de PRODUCTION. Une commande passee ici est une vraie commande.
+ * ⚠️ Sans ce detour, le navigateur appelle Azure directement depuis
+ *    http://localhost:4300 — et le preflight CORS repond 403, parce que cette
+ *    origine n'est pas dans GARAH_CORS_ORIGINS. Le symptome a l'ecran est
+ *    « Pas de connexion », qui fait chercher du cote du reseau alors que le
+ *    serveur repond parfaitement.
  *
- *    Pour viser un Spring Boot local, remplacer par http://localhost:8080 et
- *    ajouter cette origine a GARAH_CORS_ORIGINS cote serveur.
+ *    Le proxy evite d'avoir a declarer chaque poste de developpement cote
+ *    serveur.
+ *
+ * ⚠️ Les donnees restent celles de PRODUCTION. Une commande passee ici est une
+ *    vraie commande.
  */
 export const environnement = {
   production: false,
-  urlApi: 'https://garah-api-anfeapebbth7h7an.francecentral-01.azurewebsites.net',
+  urlApi: '',
 };

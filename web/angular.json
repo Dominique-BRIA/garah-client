@@ -60,7 +60,8 @@
               "buildTarget": "garah-boutique:build:production"
             },
             "development": {
-              "buildTarget": "garah-boutique:build:development"
+              "buildTarget": "garah-boutique:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
