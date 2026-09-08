@@ -207,6 +207,27 @@
   .bouton--panier,
   .bouton--panier.bouton--actif { color: var(--accent-secondaire); }
 
+  // Le panier est PLUS GROS que les autres icônes de la rangée. Ce n'est pas
+  // de la décoration : entre un champ de recherche large et deux boutons à
+  // libellé, une icône de 20 px se perdait — on la cherchait des yeux alors
+  // que c'est la destination la plus frequentée d'une boutique.
+  .bouton--panier {
+    min-width: 48px;
+    min-height: 48px;
+
+    svg { width: 27px; height: 27px; }
+  }
+
+  // La pastille suit : collée à un plus grand panier, elle doit s'écarter du
+  // centre, sinon elle chevauche l'anse du panier au lieu de le surmonter.
+  .bouton--panier .bouton__compteur {
+    top: 3px;
+    right: 1px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10.5px;
+  }
+
   .bouton--texte {
     padding: 0 0.9rem;
     font-size: 0.875rem;
