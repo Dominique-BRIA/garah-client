@@ -1,7 +1,25 @@
 {
+  "_lire": [
+    "La cible de developpement : l'API tournant sur le poste.",
+    "",
+    "🎯 Elle visait Azure, donc la base Neon, donc les VRAIES donnees : une",
+    "   commande passee en developpement etait une vraie commande. Le profil",
+    "   `recette` du backend existe pour que ce ne soit plus le cas.",
+    "",
+    "   Lancer l'API en face :",
+    "     cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=recette",
+    "",
+    "⚠️ `secure` passe a false : en local l'API est servie EN CLAIR. Laisse a",
+    "   true, le proxy refuse la cible http:// sans message clair.",
+    "",
+    "⚠️ Pour repasser sur Azure le temps d'une verification avant livraison,",
+    "   remettre l'adresse complete et `secure: true`. C'est le seul moyen",
+    "   d'exercer pour de bon le CORS inter-sites, le cookie SameSite=None et",
+    "   les URL de medias signees — les trois que le local ne voit pas."
+  ],
   "/api": {
-    "target": "https://garah-api-anfeapebbth7h7an.francecentral-01.azurewebsites.net",
-    "secure": true,
+    "target": "http://localhost:8080",
+    "secure": false,
     "changeOrigin": true,
     "logLevel": "warn"
   }
