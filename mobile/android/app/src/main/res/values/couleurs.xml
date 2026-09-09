@@ -5,7 +5,7 @@
      valeur est recopiée ici plutôt qu'engendrée.
 -->
 <resources>
-    <color name="fond_ouverture">#F8FAFC</color>
+    <color name="fond_ouverture">#FFFFFF</color>
 
     <!--
       Le fond de l icone de lancement.
@@ -15,5 +15,5 @@
          apparence ne peut pas dependre d un reglage du telephone. C est la
          meme raison qui fait que le vert de la marque est une constante.
     -->
-    <color name="fond_icone">#F8FAFC</color>
+    <color name="fond_icone">#101C3D</color>
 </resources>

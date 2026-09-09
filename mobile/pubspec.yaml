@@ -46,6 +46,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Le symbole de l ecran d ouverture. Un PNG et non un SVG : rendre un
+  # vecteur demanderait flutter_svg, et la liste des paquets reste courte.
+  assets:
+    - assets/marque/symbole.png
+
   # La police de la charte, partagée avec le web. Elle sera EMBARQUÉE et non
   # chargée depuis Google Fonts : une application installée doit s'afficher
   # correctement sans réseau, et le premier lancement se fait souvent en

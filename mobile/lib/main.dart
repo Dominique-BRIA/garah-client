@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'api/client_api.dart';
 import 'charte/theme.dart';
 import 'coque.dart';
+import 'ecrans/ouverture.dart';
 import 'services/notifications.dart';
 import 'services/panier_local.dart';
 import 'services/services.dart';
@@ -88,7 +89,10 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
           // ⚠️ JAMAIS `ThemeMode.system` : voir ServiceTheme. Le défaut est le
           //    clair, et il se change au doigt, pas au réglage du téléphone.
           themeMode: _theme.sombre ? ThemeMode.dark : ThemeMode.light,
-          home: const Coque(),
+          // ⚠️ La coque est construite SOUS l ecran d ouverture, pas apres :
+          //    le fondu decouvre alors une application deja prete, et non
+          //    un blanc le temps qu elle se monte.
+          home: const Ouverture(suite: Coque()),
         ),
       ),
     );
