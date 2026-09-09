@@ -5,6 +5,7 @@ import '../charte/jetons.dart';
 import '../charte/theme.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
+import 'discussion.dart';
 
 class _Dossier {
   const _Dossier({
@@ -292,15 +293,15 @@ class _EcranSavState extends State<EcranSav> {
 
 /// Mes discussions.
 ///
-/// ## ⚠️ La liste seule, sur mobile
+/// ## ⚠️ La liste seule ne suffisait pas
 ///
-/// Le fil et les propositions de prix vivent sur la version web. Une
-/// négociation se lit en comparant des chiffres et des dates : sur un écran de
-/// téléphone, la moitié de l'information sort du cadre, et on accepte un prix
-/// sans avoir vu celui d'avant.
+/// Elle répondait à « est-ce qu'on m'a répondu ? » sans permettre de LIRE la
+/// réponse : le fil vivait uniquement sur la version web. C'était assumé tant
+/// que le bouton s'appelait « Négocier » — une négociation se lit en comparant
+/// des chiffres et des dates, ce qu'un petit écran rend pénible.
 ///
-/// La liste, elle, répond à la seule question qu'on se pose en mobilité :
-/// « est-ce qu'on m'a répondu ? »
+/// Le bouton pose maintenant une question. Une question et sa réponse sont du
+/// texte : `EcranDiscussion` les ouvre d'une tape sur une carte.
 class EcranDiscussions extends StatefulWidget {
   const EcranDiscussions({super.key});
 
@@ -385,7 +386,7 @@ class _EcranDiscussionsState extends State<EcranDiscussions> {
           ? const EtatVide(
               message: 'Vous n’avez aucune discussion en cours.',
               detail:
-                  'Le bouton « Négocier » d’une fiche produit en ouvre une.',
+                  'Le bouton « Contacter » d’une fiche produit en ouvre une.',
             )
           : RefreshIndicator(
               onRefresh: _charger,
@@ -395,9 +396,7 @@ class _EcranDiscussionsState extends State<EcranDiscussions> {
                   for (final c in _conversations) _uneCarte(context, c),
                   const SizedBox(height: 10),
                   Text(
-                    'Les propositions de prix se lisent et s’acceptent sur la '
-                    'version web : sur un écran de téléphone, la moitié des '
-                    'chiffres sort du cadre.',
+                    'Touchez une discussion pour la lire et répondre.',
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.5,
@@ -414,37 +413,54 @@ class _EcranDiscussionsState extends State<EcranDiscussions> {
     final etat = _statuts[c['statut'] as String? ?? ''];
     final date = DateTime.tryParse((c['dateCreation'] as String?) ?? '');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: context.bordure),
-        borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+    final sujet = (c['sujet'] as String?) ?? '';
+
+    return InkWell(
+      // ⚠️ Le sujet est passé pour que la barre du fil porte un nom AVANT que
+      //    la réponse n'arrive. Un écran qui s'ouvre sans titre donne
+      //    l'impression de s'être trompé de lien.
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              EcranDiscussion(id: (c['id'] as num).toInt(), sujet: sujet),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            (c['sujet'] as String?) ?? '',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (date != null)
-                Text(
-                  'Ouverte le ${_EcranSavState._jour(date)}',
-                  style: TextStyle(fontSize: 11.5, color: context.texteAttenue),
+      borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border.all(color: context.bordure),
+          borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              sujet,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (date != null)
+                  Text(
+                    'Ouverte le ${_EcranSavState._jour(date)}',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: context.texteAttenue,
+                    ),
+                  ),
+                Etiquette(
+                  texte: etat?.texte ?? (c['statut'] as String? ?? ''),
+                  couleur: etat?.couleur,
                 ),
-              Etiquette(
-                texte: etat?.texte ?? (c['statut'] as String? ?? ''),
-                couleur: etat?.couleur,
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

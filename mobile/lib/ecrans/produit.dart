@@ -612,9 +612,9 @@ class _EcranProduitState extends State<EcranProduit> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _negocier,
+                onPressed: _contacter,
                 icon: const Icon(Icons.forum_outlined, size: 18),
-                label: const Text('Négocier'),
+                label: const Text('Contacter'),
               ),
             ),
             const SizedBox(width: 10),
@@ -631,12 +631,23 @@ class _EcranProduitState extends State<EcranProduit> {
     );
   }
 
-  /// Ouvre une négociation sur CET article.
+  /// Ouvre une question sur CET article.
   ///
-  /// ⚠️ Sans compte, on ne peut rien ouvrir : la négociation vit dans une
+  /// ## 🎯 Ce bouton s'appelait « Négocier »
+  ///
+  /// Le prix affiché est **ferme**. Il ne se discute pas article par article —
+  /// sauf cas rare, qui se traite alors dans le fil, à la main. Un bouton
+  /// « Négocier » sur chaque fiche promettait l'inverse : il installait le
+  /// marchandage comme le mode normal d'achat.
+  ///
+  /// Ce qui manquait vraiment était plus simple : **poser une question**. Les
+  /// dimensions réelles, la matière, le délai — tout ce qui décide un achat et
+  /// qu'une fiche ne dira jamais entièrement.
+  ///
+  /// ⚠️ Sans compte, on ne peut rien ouvrir : la question vit dans une
   ///    conversation, qui appartient à quelqu'un. On le DIT plutôt que de
   ///    laisser un bouton sans effet.
-  Future<void> _negocier() async {
+  Future<void> _contacter() async {
     final services = Services.de(context);
     final messager = ScaffoldMessenger.of(context);
     final f = _fiche;
@@ -645,7 +656,9 @@ class _EcranProduitState extends State<EcranProduit> {
 
     if (!services.session.connecte) {
       messager.showSnackBar(
-        const SnackBar(content: Text('Connectez-vous pour négocier un prix.')),
+        const SnackBar(
+          content: Text('Connectez-vous pour écrire au service client.'),
+        ),
       );
       return;
     }
@@ -655,11 +668,12 @@ class _EcranProduitState extends State<EcranProduit> {
         : f.nom;
     try {
       await services.api.poster('/api/conversations', {
-        'sujet': 'Négociation : $article',
-        // Le PRIX ne part pas dans le message : il se propose comme une offre
-        // datée, dans le fil, pas comme une phrase qu'on relit à l'envers.
-        'premierMessage':
-            'Bonjour, je souhaite négocier le prix de « $article » pour $_quantite pièce(s).',
+        'sujet': 'Question : $article',
+        // On n'écrit PAS le prix : il est sur la fiche, et le recopier dans un
+        // fil en ferait une valeur qui vieillit sans que personne s'en avise.
+        'premierMessage': _quantite > 1
+            ? 'Bonjour, je voudrais en savoir plus sur « $article » ($_quantite pièces).'
+            : 'Bonjour, je voudrais en savoir plus sur « $article ».',
       });
       messager.showSnackBar(
         const SnackBar(

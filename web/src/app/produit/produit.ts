@@ -63,7 +63,7 @@ export class Produit {
   protected readonly lienCopie = signal(false);
   protected readonly quantite = signal(1);
   protected readonly ajoute = signal(false);
-  protected readonly negociation = signal(false);
+  protected readonly contact = signal(false);
 
   /** La déclinaison choisie, ou la première proposée. */
   protected readonly declinaison = computed<Declinaison | null>(() => {
@@ -286,28 +286,35 @@ export class Produit {
   }
 
   /**
-   * Ouvre une négociation sur CET article.
+   * Ouvre une question sur CET article.
    *
-   * <h2>🎯 Le bouton ouvre vraiment une discussion</h2>
+   * <h2>🎯 Ce bouton s'appelait « Négocier »</h2>
    *
-   * <p>Il se contentait de rediriger vers la connexion, même déjà connecté :
-   * on cliquait, on arrivait sur un écran de mot de passe, et la négociation
-   * n'existait nulle part. Elle vit dans une conversation, et c'est celle-là
-   * qu'on ouvre.</p>
+   * <p>Le prix affiché est <b>ferme</b>. Il ne se discute pas article par
+   * article — sauf cas rare, qui se traite alors dans le fil, à la main. Un
+   * bouton « Négocier » sur chaque fiche promettait l'inverse : il installait
+   * le marchandage comme le mode normal d'achat, et mettait la maison dans
+   * une posture qu'elle ne tient pas.</p>
    *
-   * <p>Le sujet et le premier message portent le nom de l'article et la
-   * quantité affichée : le conseiller qui prend la main sait de quoi on parle
-   * sans rien demander. Le <b>prix</b> ne s'y met pas — il se propose comme
-   * une offre datée, dans le fil, pas comme une phrase.</p>
+   * <p>Ce qui manquait vraiment était plus simple : <b>poser une question</b>.
+   * Les dimensions réelles, la matière, le délai, la garantie — tout ce qui
+   * décide un achat et qu'une fiche ne dira jamais entièrement.</p>
+   *
+   * <h2>Ce que le message porte</h2>
+   *
+   * <p>Le sujet et le premier message nomment l'article, et la quantité quand
+   * elle dépasse une pièce : le conseiller qui prend la main sait de quoi on
+   * parle sans rien demander. On n'écrit pas le prix — il est sur la fiche,
+   * et le recopier dans un fil en ferait une valeur qui vieillit.</p>
    *
    * <p>⚠️ Sans compte, on passe par la connexion avec l'adresse de retour :
-   * la négociation exige d'être identifié, mais renvoyer sans retour ferait
-   * perdre l'article qu'on regardait.</p>
+   * écrire exige d'être identifié, mais renvoyer sans retour ferait perdre
+   * l'article qu'on regardait.</p>
    */
-  protected negocier(): void {
+  protected contacter(): void {
     const f = this.fiche();
     const d = this.declinaison();
-    if (!f || !d || this.negociation()) {
+    if (!f || !d || this.contact()) {
       return;
     }
 
@@ -318,24 +325,24 @@ export class Produit {
       return;
     }
 
-    this.negociation.set(true);
+    this.contact.set(true);
 
     const article = f.declinaisons.length > 1 ? `${f.nom} — ${d.libelle}` : f.nom;
 
     this.http
       .post<{ id: number }>('/api/conversations', {
-        sujet: `Négociation : ${article}`.slice(0, 200),
+        sujet: `Question : ${article}`.slice(0, 200),
         premierMessage:
-          `Bonjour, je souhaite négocier le prix de « ${article} » `
-          + `pour ${this.quantite()} pièce(s).`,
+          `Bonjour, je voudrais en savoir plus sur « ${article} »`
+          + (this.quantite() > 1 ? ` (${this.quantite()} pièces).` : '.'),
       })
       .subscribe({
         next: (c) => {
-          this.negociation.set(false);
+          this.contact.set(false);
           this.router.navigate(['/mes-discussions', c.id]);
         },
         error: () => {
-          this.negociation.set(false);
+          this.contact.set(false);
           // On ne bloque pas sur cet écran : la liste des discussions
           // permettra d'en ouvrir une à la main.
           this.router.navigate(['/mes-discussions']);

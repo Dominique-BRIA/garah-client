@@ -191,15 +191,20 @@
       </section>
     }
 
-    <!-- Actions. « Négocier » est au MÊME niveau qu'« Ajouter » : c'est un
-         vrai flux commercial, pas une messagerie. -->
+    <!-- Actions. « Contacter » est au MÊME niveau qu'« Ajouter » : poser une
+         question avant d'acheter est un geste d'achat, pas un détour.
+
+         ⚠️ Ce bouton s'appelait « Négocier ». Le prix affiché est FERME : il
+            ne se discute pas article par article, et laisser croire le
+            contraire mettait la maison dans une posture qu'elle ne tient pas.
+            Ce qu'on ouvre ici, c'est une question sur l'article. -->
     <div class="actions">
-      <button type="button" class="gb-btn gb-btn--secondaire actions__negocier"
-              [disabled]="negociation()" (click)="negocier()">
+      <button type="button" class="gb-btn gb-btn--secondaire actions__contacter"
+              [disabled]="contact()" (click)="contacter()">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M5 5h14v10H9l-4 4V5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
         </svg>
-        Négocier
+        Contacter
       </button>
 
       @if (ajoute()) {
