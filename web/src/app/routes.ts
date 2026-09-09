@@ -57,6 +57,23 @@ export const routes: Routes = [
   },
 
   /*
+   * ⚠️ PUBLIQUE, et elle DOIT l'etre : on arrive ici depuis un courriel, sans
+   *    session. La garder derriere le garde renverrait vers la connexion, et
+   *    le jeton serait perdu en chemin.
+   *
+   * ⚠️ Cette route MANQUAIT. Le lien de confirmation se construit a partir de
+   *    GARAH_URL_VERIFICATION, et le nom invitait a la faire pointer ici —
+   *    mais la regle de repli (** -> accueil) attrapait la visite et le jeton
+   *    disparaissait EN SILENCE. Le courriel partait, le lien ouvrait bien la
+   *    boutique, l'accueil s'affichait : le client se croyait confirme, et
+   *    decouvrait le refus des semaines plus tard, au paiement.
+   */
+  {
+    path: 'verification',
+    loadComponent: () => import('./compte/verification').then((m) => m.Verification),
+  },
+
+  /*
    * Le panier est PUBLIC, et ce n'est pas un oubli.
    *
    * 🎯 Un visiteur remplit son panier sans compte — il vit dans le navigateur.

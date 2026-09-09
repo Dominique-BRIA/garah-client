@@ -163,6 +163,18 @@
           </div>
         </div>
 
+        @if (borneParLeTarif()) {
+          <!-- ⚠️ « Il n'en reste que 10 » et « au-delà de 10 le prix n'est pas
+               fixé » n'appellent pas le même geste. Le second se règle en
+               écrivant au marchand, et on le dit plutôt que de laisser le
+               bouton + ne plus répondre sans raison visible. -->
+          <p class="quantite__plafond">
+            Le prix est fixé jusqu’à {{ plafondTarifaire() }} unité(s). Il en
+            reste {{ d.disponible }} : pour en commander davantage, écrivez au
+            marchand.
+          </p>
+        }
+
         <div class="quantite__separateur"></div>
 
         <div class="quantite__ligne">
@@ -172,7 +184,14 @@
               <p class="quantite__detail">{{ quantite() }} × {{ montant(p.prixUnitaire) }}</p>
             }
           </div>
-          <p class="gb-montant sousTotal">{{ montant(sousTotal()) }}</p>
+          <!-- ⚠️ JAMAIS « 0 FCFA » quand aucun palier ne s'applique. Zéro n'est
+               pas une valeur manquante à l'écran : c'est une PROMESSE DE
+               GRATUITÉ, et c'est exactement ce que la fiche affichait. -->
+          @if (palierActif()) {
+            <p class="gb-montant sousTotal">{{ montant(sousTotal()) }}</p>
+          } @else {
+            <p class="quantite__sansprix">Prix non fixé pour cette quantité</p>
+          }
         </div>
 
         <!-- Le prix affiché n'engage à rien : il est figé à la commande. -->
@@ -213,7 +232,7 @@
         </a>
       } @else {
         <button type="button" class="gb-btn gb-btn--primaire actions__panier"
-                [disabled]="!achetable(d)" (click)="ajouterAuPanier()">
+                [disabled]="!achetable(d) || !palierActif()" (click)="ajouterAuPanier()">
           Ajouter au panier
         </button>
       }

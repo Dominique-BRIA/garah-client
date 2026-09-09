@@ -508,3 +508,32 @@ gb-coeur { flex: 0 0 auto; }
 .fil a,
 .photo__retour { transition: border-color 0.2s ease-in-out, color 0.2s ease-in-out; }
 .compteur button { transition: background 0.15s ease-in-out; }
+
+// ⚠️ QUAND LA GRILLE BORNE AVANT LE STOCK.
+//
+//    Sans ce mot, le bouton « + » cesse de repondre sans raison visible : on
+//    voit « 30 disponible(s) » et l on bloque a 10. Le ton reste celui d une
+//    information, pas d une alerte — rien n est casse, le marchand n a
+//    simplement pas fixe de prix au-dela.
+.quantite__plafond {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-douce);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--texte-attenue);
+}
+
+// 🎯 CE QUI REMPLACE « 0 FCFA ».
+//
+//    Zero n est pas une valeur manquante a l ecran : c est une promesse de
+//    gratuite. On ecrit donc la phrase, et on la met a la place exacte du
+//    montant — attenuee, car ce n est pas un prix.
+.quantite__sansprix {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--texte-attenue);
+}

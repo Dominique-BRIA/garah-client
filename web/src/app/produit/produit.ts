@@ -92,6 +92,56 @@ export class Produit {
     return d ? palierSuivant(d.paliers, this.quantite(), d.disponible) : null;
   });
 
+  /**
+   * La quantité la plus haute qui ait un prix.
+   *
+   * <h2>🎯 Le sous-total tombait à « 0 FCFA »</h2>
+   *
+   * <p>Le sélecteur plafonnait au STOCK. Sur un article à 30 en réserve dont
+   * les paliers s'arrêtaient à 10, on pouvait donc demander 11 — une quantité
+   * qui ne tombe dans aucun palier. {@link palierPour} rendait alors
+   * {@code null}, et le sous-total affichait <b>0 FCFA</b>.</p>
+   *
+   * <p>⚠️ Zéro n'est pas une valeur manquante à l'écran : c'est une PROMESSE
+   * DE GRATUITÉ. Et le bouton « Ajouter au panier » ne faisait rien du tout,
+   * sans le moindre message — on cliquait, et l'on cherchait la panne.</p>
+   *
+   * <p>⚠️ Un palier sans maximum signifie « et au-delà » : dès qu'il en existe
+   * un, plus rien ne borne le tarif. C'est la forme NORMALE d'une grille bien
+   * saisie, et celle-ci ne déclenche donc aucun plafond.</p>
+   */
+  protected readonly plafondTarifaire = computed(() => {
+    const paliers = this.declinaison()?.paliers ?? [];
+    if (paliers.length === 0) {
+      return 0;
+    }
+    if (paliers.some((p) => p.quantiteMax === null)) {
+      return Number.POSITIVE_INFINITY;
+    }
+    return Math.max(...paliers.map((p) => p.quantiteMax ?? 0));
+  });
+
+  /** Le plafond réellement appliqué : le premier des deux qui mord. */
+  protected readonly plafond = computed(() => {
+    const d = this.declinaison();
+    if (!d) {
+      return 1;
+    }
+    return Math.min(d.disponible, this.plafondTarifaire());
+  });
+
+  /**
+   * Vrai quand c'est la GRILLE qui borne, et non le stock.
+   *
+   * <p>La distinction compte pour qui lit : « il n'en reste que 10 » et « au
+   * delà de 10 le prix n'est pas fixé » n'appellent pas le même geste. Le
+   * second se règle en écrivant au marchand, et l'écran le propose.</p>
+   */
+  protected readonly borneParLeTarif = computed(() => {
+    const d = this.declinaison();
+    return !!d && this.plafondTarifaire() < d.disponible;
+  });
+
   protected readonly sousTotal = computed(() => {
     const palier = this.palierActif();
     return palier ? palier.prixUnitaire * this.quantite() : 0;
@@ -216,7 +266,10 @@ export class Produit {
     const minimum = Math.max(1, d.quantiteMinimale);
     const suivante = this.quantite() + delta;
 
-    this.quantite.set(Math.min(Math.max(suivante, minimum), Math.max(minimum, d.disponible)));
+    // ⚠️ On borne par le PLAFOND et non par le stock : au-dela du dernier
+    //    palier il n existe aucun prix, et laisser monter la quantite menait
+    //    tout droit au sous-total a zero.
+    this.quantite.set(Math.min(Math.max(suivante, minimum), Math.max(minimum, this.plafond())));
     this.ajoute.set(false);
   }
 
