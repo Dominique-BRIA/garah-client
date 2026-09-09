@@ -154,11 +154,25 @@ export class Verification {
   /**
    * Le jeton, lu dans l'adresse.
    *
-   * <p>⚠️ Il vient de {@code withComponentInputBinding()} : le paramètre de
+   * <p>Il vient de {@code withComponentInputBinding()} : le paramètre de
    * requête arrive directement en entrée du composant, sans lire
    * {@code ActivatedRoute} à la main.</p>
+   *
+   * <h2>⚠️ Le type dit {@code undefined}, et ce n'est pas une précaution</h2>
+   *
+   * <p>Écrit {@code input<string>('')}, ce champ vaut quand même
+   * <b>{@code undefined}</b> quand l'adresse ne porte pas {@code ?jeton=} : le
+   * routeur <b>affecte</b> l'entrée avec la valeur absente, et cette
+   * affectation écrase la valeur par défaut. Celle-ci ne sert que si personne
+   * n'affecte jamais l'entrée — ce qui n'arrive pas ici.</p>
+   *
+   * <p>Le premier jet lisait {@code this.jeton().trim()} : la page entière
+   * restait <b>blanche</b>, sur un {@code TypeError} qu'aucun écran ne
+   * montrait. Angular avait bien créé la balise ; son contenu, lui, n'existait
+   * pas — pas même le texte statique, puisque le gabarit lève avant de
+   * l'écrire.</p>
    */
-  readonly jeton = input<string>('');
+  readonly jeton = input<string | undefined>('');
 
   protected readonly etat = signal<Etat>('attente');
   protected readonly message = signal('');
@@ -167,7 +181,12 @@ export class Verification {
   protected readonly renvoye = signal(false);
   protected readonly echecRenvoi = signal<string | null>(null);
 
-  protected readonly aUnJeton = computed(() => this.jeton().trim().length > 0);
+  /** ⚠️ Un seul endroit lit l'entrée, et il la rend TOUJOURS sûre. */
+  private valeurDuJeton(): string {
+    return (this.jeton() ?? '').trim();
+  }
+
+  protected readonly aUnJeton = computed(() => this.valeurDuJeton().length > 0);
 
   constructor() {
     // ⚠️ Un `effect` et non le constructeur : l'entrée n'est pas encore
@@ -186,7 +205,7 @@ export class Verification {
     this.etat.set('attente');
 
     this.http
-      .post<{ confirme: boolean }>('/api/auth/verification', { jeton: this.jeton() })
+      .post<{ confirme: boolean }>('/api/auth/verification', { jeton: this.valeurDuJeton() })
       .subscribe({
         next: () => this.etat.set('confirme'),
         error: (e: unknown) => {

@@ -109,4 +109,33 @@ describe('Verification', () => {
     expect(affiche()).toContain('Lien incomplet');
     // ⚠️ `http.verify()` en afterEach échouerait si un appel était parti.
   });
+
+  it('⚠️ survit à un jeton ABSENT — c’est ce que le routeur envoie vraiment', async () => {
+    // 🎯 LE TEST QUI MANQUAIT, ET LA PAGE ÉTAIT BLANCHE.
+    //
+    //    `input<string>('')` laisse croire que l'entrée vaut '' quand le
+    //    paramètre est absent. C'est faux : le routeur AFFECTE l'entrée avec
+    //    la valeur absente, et cette affectation écrase la valeur par défaut.
+    //    Elle ne sert que si personne n'affecte jamais — ce qui n'arrive pas.
+    //
+    //    Les tests précédents passaient tous une chaîne. Le vrai appelant, lui,
+    //    passe `undefined` — et `.trim()` levait un TypeError qui vidait la
+    //    page ENTIÈRE, texte statique compris, sans un message.
+    fixture = TestBed.createComponent(Verification);
+    fixture.componentRef.setInput('jeton', undefined);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(affiche()).toContain('Lien incomplet');
+  });
+
+  it('⚠️ n’envoie jamais un jeton non nettoyé', () => {
+    // Une adresse recopiée à la main traîne souvent une espace.
+    monter('  abc123  ');
+
+    const appel = http.expectOne('/api/auth/verification');
+    expect(appel.request.body).toEqual({ jeton: 'abc123' });
+    appel.flush({ confirme: true });
+  });
 });
