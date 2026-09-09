@@ -36,6 +36,18 @@ mobile/ios/Pods/
 mobile/ios/.symlinks/
 *.iml
 
+# --- La cle de signature Android -------------------------------------------
+# ⚠️ RIEN DE CECI NE DOIT ENTRER DANS LE DEPOT. Une cle de signature publiee
+#    est une cle morte : n importe qui peut alors fabriquer un APK que les
+#    telephones accepteront comme une mise a jour de GARAH.
+#
+#    Le .jks vit HORS du depot, et la chaine GitHub l ecrit depuis un secret.
+#    Seul key.properties.exemple est versionne — il ne contient aucune valeur.
+mobile/android/key.properties
+*.jks
+*.keystore
+!mobile/android/key.properties.exemple
+
 # --- Éditeurs ---------------------------------------------------------------
 .idea/
 .vscode/*

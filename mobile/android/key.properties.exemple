@@ -1,0 +1,25 @@
+# Le gabarit de android/key.properties — le VRAI fichier n'est pas ici, et
+# n'y sera jamais : il est ignore par git.
+#
+# 🎯 A QUOI IL SERT
+#
+#    Sans lui, `flutter build apk --release` echoue avec un message qui dit
+#    quoi faire. C'est voulu : Flutter, par defaut, retombait en SILENCE sur
+#    la cle de DEBUG, et rendait un .apk qui s'installe et fonctionne — donc
+#    rien n'avertissait. Or cette cle change d'une machine a l'autre : deux
+#    APK ainsi signes ne se mettent pas a jour l'un l'autre.
+#
+# ⚠️ LE .jks ET SON MOT DE PASSE NE SE REMPLACENT PAS. Les perdre, c'est
+#    perdre la possibilite de mettre a jour l'application pour tous ceux qui
+#    l'ont deja installee. Il n'y a aucun recours, aucun support a saisir :
+#    la seule sortie est de republier sous un autre nom de paquet, et de
+#    demander a chacun de desinstaller puis reinstaller.
+#
+# En local : copier ce fichier en `key.properties` et remplir les quatre
+# lignes. Sur GitHub Actions : la chaine l'ecrit depuis les secrets, il n'y a
+# rien a faire a la main.
+
+storePassword=le-mot-de-passe-du-magasin
+keyPassword=le-mot-de-passe-de-la-cle
+keyAlias=garah
+storeFile=D:/chemin/vers/garah-release.jks

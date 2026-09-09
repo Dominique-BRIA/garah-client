@@ -85,6 +85,42 @@ jobs:
       - name: Dépendances
         run: flutter pub get
 
+      # ⚠️ LA CLÉ DE SIGNATURE ARRIVE ICI, ET REPART AVEC LE COUREUR.
+      #
+      #    Sans cette étape, `flutter build apk --release` échouait — c'est
+      #    voulu. Flutter, par défaut, retombait en SILENCE sur la clé de
+      #    DEBUG : l'APK s'installait, tout avait l'air de marcher, et rien
+      #    n'avertissait. Or cette clé est engendrée par la machine qui
+      #    compile. Elle change d'un coureur GitHub au suivant, si bien que
+      #    deux APK « release » ne se mettaient pas à jour l'un l'autre.
+      #
+      # ⚠️ Le magasin est écrit en base64 dans un secret parce qu'un secret
+      #    GitHub ne porte que du texte. Il n'est PAS chiffré par ce codage —
+      #    c'est le stockage des secrets qui protège, pas le base64.
+      - name: Poser la clé de signature
+        env:
+          MAGASIN: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          MDP_MAGASIN: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          MDP_CLE: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          # On s'arrête AVANT de compiler si un secret manque. Sinon Gradle
+          # échouerait huit minutes plus tard sur un message moins clair.
+          if [ -z "$MAGASIN" ]; then
+            echo "::error::Le secret ANDROID_KEYSTORE_BASE64 est vide ou absent."
+            echo "Voir mobile/android/key.properties.exemple."
+            exit 1
+          fi
+          echo "$MAGASIN" | base64 --decode > android/garah-release.jks
+
+          # `storeFile` est résolu depuis android/app, d'où le `../`.
+          cat > android/key.properties <<EOF
+          storePassword=$MDP_MAGASIN
+          keyPassword=$MDP_CLE
+          keyAlias=$ALIAS
+          storeFile=../garah-release.jks
+          EOF
+
       - name: Construire l'APK
         # L'adresse de l'API se passe au build : l'écrire en dur obligerait à
         # modifier le code pour changer d'environnement.

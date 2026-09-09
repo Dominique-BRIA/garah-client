@@ -1,3 +1,16 @@
+import java.util.Properties
+
+// ⚠️ LA CLÉ DE SIGNATURE N'EST PAS DANS CE DÉPÔT, et ne doit jamais y entrer.
+//
+//    `key.properties` et le fichier .jks sont ignorés par git. En local ils
+//    sont posés à la main ; sur GitHub Actions, la chaîne les écrit depuis
+//    des secrets. Voir .github/workflows/mobile.yml.
+val proprietesCle = Properties()
+val fichierCle = rootProject.file("key.properties")
+if (fichierCle.exists()) {
+    fichierCle.inputStream().use { proprietesCle.load(it) }
+}
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -33,11 +46,43 @@ android {
         versionName = flutter.versionName
     }
 
+    // ⚠️ CE BLOC REMPLACE LE `TODO` DE FLUTTER, qui signait la RELEASE avec la
+    //    clé de DEBUG. Un APK ainsi signé s'installe et fonctionne, ce qui est
+    //    précisément le piège : rien n'avertit. Mais la clé de debug est
+    //    engendrée par la machine qui compile — elle change d'un poste à
+    //    l'autre et d'un coureur GitHub au suivant. Deux APK « release » ne se
+    //    mettent alors pas à jour l'un l'autre, et aucun n'est publiable.
+    signingConfigs {
+        create("release") {
+            keyAlias = proprietesCle.getProperty("keyAlias")
+            keyPassword = proprietesCle.getProperty("keyPassword")
+            storeFile = proprietesCle.getProperty("storeFile")?.let { file(it) }
+            storePassword = proprietesCle.getProperty("storePassword")
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // ⚠️ ON ÉCHOUE PLUTÔT QUE DE RETOMBER SUR LA CLÉ DE DEBUG.
+            //
+            //    Le repli silencieux est ce qui a laissé passer le problème :
+            //    la chaîne rendait un .apk, tout avait l'air de marcher. Sans
+            //    clé, la compilation release s'arrête ici et dit pourquoi — un
+            //    échec bruyant vaut mieux qu'un artefact qu'on croit bon.
+            //
+            //    Le debug, lui, continue de se compiler sans rien : c'est ce
+            //    qui permet de reprendre le dépôt et de lancer l'application
+            //    sans détenir la clé.
+            signingConfig = if (fichierCle.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                throw GradleException(
+                    "Aucune clé de signature : android/key.properties est absent.\n" +
+                    "  • En local  : le poser à côté du .jks — voir key.properties.exemple.\n" +
+                    "  • Sur la CI : vérifier les secrets ANDROID_KEYSTORE_BASE64, " +
+                    "ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD."
+                )
+            }
         }
     }
 }
