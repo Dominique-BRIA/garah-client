@@ -15,6 +15,17 @@
 #    la seule sortie est de republier sous un autre nom de paquet, et de
 #    demander a chacun de desinstaller puis reinstaller.
 #
+# ⚠️ SUR LA CI, L ALIAS EST UNE VARIABLE, PAS UN SECRET. Settings > Secrets
+#    and variables > Actions distingue deux onglets, et ce sont deux espaces
+#    de noms separes : un ANDROID_KEY_ALIAS depose du mauvais cote se lit
+#    vide, et Gradle echoue sur un message qui ne dit pas pourquoi.
+#
+#      onglet Secrets   : ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#                         ANDROID_KEY_PASSWORD
+#      onglet Variables : ANDROID_KEY_ALIAS  (facultatif, vaut garah sinon)
+#
+#    L alias n a rien d un secret : il se lit dans l APK signe.
+#
 # En local : copier ce fichier en `key.properties` et remplir les quatre
 # lignes. Sur GitHub Actions : la chaine l'ecrit depuis les secrets, il n'y a
 # rien a faire a la main.

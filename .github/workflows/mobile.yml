@@ -101,14 +101,20 @@ jobs:
         env:
           MAGASIN: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           MDP_MAGASIN: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          # ⚠️ Une VARIABLE et non un secret — deux espaces de noms distincts.
+          #    L alias ne protege rien : il se lit dans l APK signe. Le mettre
+          #    en secret le rendrait juste invisible dans les journaux, au prix
+          #    d une valeur vide si on se trompe d onglet dans GitHub.
+          ALIAS: ${{ vars.ANDROID_KEY_ALIAS || 'garah' }}
           MDP_CLE: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           # On s'arrête AVANT de compiler si un secret manque. Sinon Gradle
           # échouerait huit minutes plus tard sur un message moins clair.
           if [ -z "$MAGASIN" ]; then
             echo "::error::Le secret ANDROID_KEYSTORE_BASE64 est vide ou absent."
-            echo "Voir mobile/android/key.properties.exemple."
+            echo "Settings > Secrets and variables > Actions :"
+            echo "  onglet Secrets   : ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_PASSWORD"
+            echo "  onglet Variables : ANDROID_KEY_ALIAS (facultatif, vaut garah par defaut)"
             exit 1
           fi
           echo "$MAGASIN" | base64 --decode > android/garah-release.jks

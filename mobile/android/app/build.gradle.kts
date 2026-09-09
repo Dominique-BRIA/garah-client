@@ -79,8 +79,11 @@ android {
                 throw GradleException(
                     "Aucune clé de signature : android/key.properties est absent.\n" +
                     "  • En local  : le poser à côté du .jks — voir key.properties.exemple.\n" +
-                    "  • Sur la CI : vérifier les secrets ANDROID_KEYSTORE_BASE64, " +
-                    "ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD."
+                    "  • Sur la CI : Settings > Secrets and variables > Actions.\n" +
+                    "      Secrets   : ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, " +
+                    "ANDROID_KEY_PASSWORD\n" +
+                    "      Variables : ANDROID_KEY_ALIAS — c'est une VARIABLE et non un " +
+                    "secret : les deux onglets sont des espaces de noms distincts."
                 )
             }
         }
