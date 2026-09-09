@@ -5,13 +5,38 @@ import { Observable, catchError, map, of, tap } from 'rxjs';
 import { poserJeton } from '../api/intercepteur-api';
 import { PanierLocal } from './panier-local';
 
-/** Ce que le serveur renvoie à la connexion. */
+/**
+ * Ce que le serveur renvoie à la connexion.
+ *
+ * <h2>⚠️ Cette interface DÉCRIVAIT une réponse qui n'existe pas</h2>
+ *
+ * <p>Elle déclarait `jetonAcces`, `utilisateurId`, `nom` et `email` à la
+ * racine. Le serveur envoie `jeton` et un objet `utilisateur` imbriqué — et
+ * l'a toujours fait : c'est le contrat que le back-office lit correctement.</p>
+ *
+ * <p>Rien ne le signalait. TypeScript ne vérifie <b>rien</b> à l'exécution :
+ * `post&lt;ResultatConnexion&gt;` est une promesse faite au compilateur, pas
+ * un contrôle. Lire un champ absent rend `undefined`, sans erreur.</p>
+ *
+ * <p>Le résultat : `poserJeton(undefined)` — donc aucun jeton — et un
+ * utilisateur dont tous les champs valaient `undefined`. L'objet n'étant pas
+ * `null`, `connecte()` répondait <b>vrai</b> : l'application se croyait
+ * connectée, affichait un nom vide, et tous ses appels partaient sans
+ * autorisation.</p>
+ *
+ * <p>Le mobile portait exactement le même désaccord, aux mêmes noms.</p>
+ */
 interface ResultatConnexion {
-  readonly jetonAcces: string;
+  readonly jeton: string;
+  readonly typeJeton: string;
   readonly expireDansSecondes: number;
-  readonly utilisateurId: number;
-  readonly nom: string;
-  readonly email: string;
+  readonly utilisateur: {
+    readonly id: number;
+    readonly nom: string;
+    readonly email: string;
+    /** `CLIENT`, `RESPONSABLE`, `ADMIN`, `SUPER_ADMIN`. */
+    readonly type: string;
+  };
 }
 
 /**
@@ -30,10 +55,26 @@ export class ServiceSession {
   private readonly http = inject(HttpClient);
   private readonly panierLocal = inject(PanierLocal);
 
-  private readonly utilisateur = signal<{ id: number; nom: string; email: string } | null>(null);
+  private readonly utilisateur =
+    signal<{ id: number; nom: string; email: string; type: string } | null>(null);
 
   readonly connecte = computed(() => this.utilisateur() !== null);
   readonly nom = computed(() => this.utilisateur()?.nom ?? null);
+
+  /**
+   * Le compte ouvert ici est-il bien celui d'un CLIENT ?
+   *
+   * <p>⚠️ La boutique ne portait pas le type du compte, donc ne pouvait pas se
+   * poser la question. Son garde ne vérifiait que « connecté » : une session
+   * d'administration y ouvrait « mes commandes », « mes retours », « mon
+   * profil » — des écrans qui n'ont rien à lui montrer, puisqu'un
+   * administrateur n'a pas de ligne `client`.</p>
+   *
+   * <p>Aucune donnée n'était exposée : ce sont ses propres écrans, vides. Mais
+   * un écran vide se lit comme une panne, et l'on cherche la commande perdue
+   * plutôt que le compte utilisé.</p>
+   */
+  readonly estClient = computed(() => this.utilisateur()?.type === 'CLIENT');
 
   /** Qui je suis, cote serveur. Sert a distinguer MES messages dans un fil. */
   readonly utilisateurId = computed(() => this.utilisateur()?.id ?? null);
@@ -117,8 +158,13 @@ export class ServiceSession {
   }
 
   private ouvrir(r: ResultatConnexion): void {
-    poserJeton(r.jetonAcces);
-    this.utilisateur.set({ id: r.utilisateurId, nom: r.nom, email: r.email });
+    poserJeton(r.jeton);
+    this.utilisateur.set({
+      id: r.utilisateur.id,
+      nom: r.utilisateur.nom,
+      email: r.utilisateur.email,
+      type: r.utilisateur.type,
+    });
     localStorage.setItem(INDICE, '1');
   }
 
