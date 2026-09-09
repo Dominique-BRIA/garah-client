@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 
 /// Les jetons de la charte GARAH, partagés avec l’application web.
 abstract final class Jetons {
-  static const marque = Color(0xFF12A594);
+  static const marque = Color(0xFF31AEF3);
   static const primaire = Color(0xFF6366F1);
   static const primaireClair = Color(0xFF818CF8);
   static const primaireSombre = Color(0xFF4F46E5);

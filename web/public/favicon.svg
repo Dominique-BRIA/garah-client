@@ -1,23 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"
+     role="img" aria-label="GARAH">
   <title>GARAH</title>
-  <!--
-    La marque, en coupe pour les petites tailles.
-
-    /!\ L'ANSE EST PLUS EPAISSE ICI QUE DANS marque.svg : 6,2 au lieu de 5.
-
-        A 16 px, un trait de 5 unites sur une grille de 48 tombe a 1,7 pixel
-        physique. Le navigateur l'etale sur deux rangees a demi allumees et
-        l'anse devient un halo : la marque n'a plus de contour, juste une
-        tache. A 6,2 le trait couvre franchement ses deux pixels.
-
-        Ce n'est pas une seconde marque, c'est la meme a une autre echelle —
-        exactement ce que fait une fonte avec ses coupes de petit corps. Ne
-        pas "harmoniser" les deux valeurs : ce serait casser l'une des deux.
-
-    Le .ico reste a cote pour les navigateurs anciens ; index.html declare
-    les deux, et celui qui comprend le SVG le choisit.
-  -->
-  <path d="M10 25A15 15 0 0 1 37.29 16.4" fill="none" stroke="#12a594"
-        stroke-width="6.2" stroke-linecap="butt"/>
-  <path d="M10 25A15 15 0 0 0 40 25Z" fill="#12a594"/>
+  <rect width="512" height="512" rx="96" fill="#101C3D"/>
+  <g transform="translate(139.4 87.0) scale(0.7267)">
+    <path fill="#31AEF3" fill-rule="evenodd" d="M34.4 0.0L238.6 1.0L250.8 6.1L258.9 15.2L263.0 24.4L263.0 181.6L256.9 194.8L246.8 203.9L238.6 207.0L41.4 244.0L33.2 247.1L29.0 254.4L29.0 270.6L32.6 271.0L233.6 238.0L239.1 227.2L247.2 219.1L253.2 216.1L299.4 199.0L315.8 199.1L321.0 204.4L321.0 220.6L316.8 225.9L271.2 242.1L264.1 247.2L263.0 357.6L261.9 362.8L254.9 373.8L244.8 380.9L234.6 383.0L28.4 383.0L15.2 378.9L4.1 367.8L0.0 354.6L0.0 247.4L5.1 231.2L13.2 222.1L28.4 216.0L221.6 180.0L230.8 175.9L234.0 170.6L234.0 35.4L231.8 32.1L226.6 29.0L37.4 29.0L34.2 30.1L29.0 36.4L29.0 191.6L23.8 197.9L20.6 199.0L5.2 197.9L0.0 190.6L0.0 28.4L2.1 19.2L11.2 7.1L20.4 2.0L34.2 0.1ZM103.4 37.0L165.6 37.0L169.0 40.4L169.0 55.6L165.6 59.0L102.4 59.0L99.0 55.6L99.0 41.4L103.2 37.1ZM227.6 268.0L216.0 271.4L216.0 301.6L217.4 303.0L234.0 302.6L234.0 268.4L227.9 268.0ZM185.6 275.0L169.1 278.2L170.2 302.9L187.9 301.8L188.0 275.4L185.9 275.0ZM135.6 283.0L122.1 286.2L123.2 302.9L140.9 301.8L141.0 283.4L135.9 283.0ZM93.6 290.0L76.2 293.1L76.1 301.8L92.8 302.9L93.8 290.1ZM45.6 298.0L29.0 301.6L45.6 303.0L47.0 301.6L45.9 298.0ZM29.6 331.0L30.1 349.8L35.4 354.0L46.8 353.9L46.9 331.2L29.9 331.0ZM76.6 331.0L76.1 353.8L93.8 353.9L93.9 331.2L76.9 331.0ZM123.6 331.0L122.1 352.8L140.8 353.9L140.9 331.2L123.9 331.0ZM169.6 331.0L169.1 353.8L186.8 353.9L187.9 332.2L169.9 331.0ZM217.6 331.0L216.0 332.4L216.1 353.8L228.8 353.9L234.0 348.6L233.9 331.2L217.9 331.0ZM64.4 389.0L74.6 389.0L87.8 392.1L100.9 403.2L107.0 416.4L107.0 437.6L102.9 448.8L93.8 458.9L80.6 465.0L57.4 465.0L46.2 459.9L36.1 449.8L32.0 439.6L31.0 421.4L36.1 405.2L47.2 394.1L64.2 389.1ZM192.4 389.0L202.6 389.0L215.8 392.1L228.9 403.2L234.0 414.4L235.0 434.6L230.9 447.8L220.8 458.9L207.6 465.0L185.4 465.0L177.2 461.9L163.1 448.8L159.0 437.6L159.0 416.4L166.1 402.2L178.2 392.1L192.2 389.1ZM68.6 418.0L61.1 424.2L60.0 427.6L65.2 434.9L70.6 436.0L76.9 430.8L78.0 426.4L74.8 421.1L68.9 418.0ZM196.6 418.0L190.1 422.2L188.0 428.6L193.2 434.9L198.6 436.0L203.9 431.8L206.0 427.4L203.9 423.2L196.9 418.0Z"/>
+  </g>
 </svg>
