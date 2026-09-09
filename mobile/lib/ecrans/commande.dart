@@ -156,6 +156,22 @@ class _EcranCommandeState extends State<EcranCommande> {
         _chargement = false;
         _erreur = e.message;
       });
+    } catch (_) {
+      // 🎯 LE FILET, derive de la branche ci-dessus.
+      //
+      //    Ne rattraper que `ErreurApi` semble propre : c'est ce que leve la
+      //    couche reseau. Mais tout ce qui casse APRES la reponse — un champ
+      //    absent, un cast qui echoue — leve autre chose, l'exception
+      //    s'echappe, et l'indicateur d'attente reste arme : l'ecran tourne
+      //    indefiniment SANS message.
+      //
+      //    C'est exactement ce qui rendait la connexion impossible sur mobile.
+      //    Le defaut etait ici aussi, dans chaque ecran, en attente.
+      if (!mounted) return;
+      setState(() {
+        _chargement = false;
+        _erreur = 'Une erreur inattendue est survenue. Reessayez.';
+      });
     }
   }
 
@@ -199,6 +215,24 @@ class _EcranCommandeState extends State<EcranCommande> {
         // Le serveur sait pourquoi il refuse — stock parti, panier vide. Son
         // message est plus juste que celui qu'on inventerait.
         _erreur = e.message;
+      });
+    } catch (_) {
+      // 🎯 LE FILET, derive de la branche ci-dessus.
+      //
+      //    Ne rattraper que `ErreurApi` semble propre : c'est ce que leve la
+      //    couche reseau. Mais tout ce qui casse APRES la reponse — un champ
+      //    absent, un cast qui echoue — leve autre chose, l'exception
+      //    s'echappe, et l'indicateur d'attente reste arme : l'ecran tourne
+      //    indefiniment SANS message.
+      //
+      //    C'est exactement ce qui rendait la connexion impossible sur mobile.
+      //    Le defaut etait ici aussi, dans chaque ecran, en attente.
+      if (!mounted) return;
+      setState(() {
+        _envoi = false;
+        // Le serveur sait pourquoi il refuse — stock parti, panier vide. Son
+        // message est plus juste que celui qu'on inventerait.
+        _erreur = 'Une erreur inattendue est survenue. Reessayez.';
       });
     }
   }

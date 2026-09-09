@@ -175,6 +175,27 @@ class _EcranDetailCommandeState extends State<EcranDetailCommande> {
             : e.message;
       });
       return;
+    } catch (_) {
+      // 🎯 LE FILET, derive de la branche ci-dessus.
+      //
+      //    Ne rattraper que `ErreurApi` semble propre : c'est ce que leve la
+      //    couche reseau. Mais tout ce qui casse APRES la reponse — un champ
+      //    absent, un cast qui echoue — leve autre chose, l'exception
+      //    s'echappe, et l'indicateur d'attente reste arme : l'ecran tourne
+      //    indefiniment SANS message.
+      //
+      //    C'est exactement ce qui rendait la connexion impossible sur mobile.
+      //    Le defaut etait ici aussi, dans chaque ecran, en attente.
+      if (!mounted) return;
+      setState(() {
+        _chargement = false;
+        // ⚠️ Le serveur répond « introuvable » AUSSI pour la commande d'un
+        //    autre : un 403 confirmerait qu'elle existe. On reprend le mot tel
+        //    quel, sans deviner laquelle des deux situations c'est — nous ne
+        //    le savons pas non plus.
+        _erreur = 'Une erreur inattendue est survenue. Reessayez.';
+      });
+      return;
     }
 
     // ⚠️ Deux appels à part, dont l'échec ne masque JAMAIS la commande.

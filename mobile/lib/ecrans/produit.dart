@@ -92,6 +92,22 @@ class _EcranProduitState extends State<EcranProduit> {
             ? 'Cet article n’est plus proposé à la vente.'
             : e.message;
       });
+    } catch (_) {
+      // 🎯 LE FILET, derive de la branche ci-dessus.
+      //
+      //    Ne rattraper que `ErreurApi` semble propre : c'est ce que leve la
+      //    couche reseau. Mais tout ce qui casse APRES la reponse — un champ
+      //    absent, un cast qui echoue — leve autre chose, l'exception
+      //    s'echappe, et l'indicateur d'attente reste arme : l'ecran tourne
+      //    indefiniment SANS message.
+      //
+      //    C'est exactement ce qui rendait la connexion impossible sur mobile.
+      //    Le defaut etait ici aussi, dans chaque ecran, en attente.
+      if (!mounted) return;
+      setState(() {
+        _chargement = false;
+        _erreur = 'Une erreur inattendue est survenue. Reessayez.';
+      });
     }
   }
 
@@ -652,6 +668,22 @@ class _EcranProduitState extends State<EcranProduit> {
       );
     } on ErreurApi catch (e) {
       messager.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      // 🎯 LE FILET, derive de la branche ci-dessus.
+      //
+      //    Ne rattraper que `ErreurApi` semble propre : c'est ce que leve la
+      //    couche reseau. Mais tout ce qui casse APRES la reponse — un champ
+      //    absent, un cast qui echoue — leve autre chose, l'exception
+      //    s'echappe, et l'indicateur d'attente reste arme : l'ecran tourne
+      //    indefiniment SANS message.
+      //
+      //    C'est exactement ce qui rendait la connexion impossible sur mobile.
+      //    Le defaut etait ici aussi, dans chaque ecran, en attente.
+      messager.showSnackBar(
+        SnackBar(
+          content: Text('Une erreur inattendue est survenue. Reessayez.'),
+        ),
+      );
     }
   }
 

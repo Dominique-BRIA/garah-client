@@ -70,6 +70,26 @@ class _EcranConnexionState extends State<EcranConnexion> {
         _envoi = false;
         _echec = e.message;
       });
+    } catch (_) {
+      // 🎯 LE FILET. Sans lui, le bouton tourne pour toujours.
+      //
+      //    Ne rattraper que `ErreurApi` semble propre : c'est le type que la
+      //    couche reseau leve. Mais tout ce qui casse APRES la reponse —
+      //    un champ absent, un cast qui echoue, une preference illisible —
+      //    leve autre chose. L'exception s'echappait alors de `_connecter`,
+      //    `_envoi` restait a `true`, et l'ecran tournait indefiniment SANS
+      //    message. C'est exactement ce qui se passait : le compte etait lu
+      //    a la racine de la reponse au lieu de `utilisateur`, et le cast
+      //    d'un `null` levait une TypeError.
+      //
+      // ⚠️ Le message reste volontairement vague : on ne montre pas le detail
+      //    technique d'une panne qu'on n'a pas prevue. Ce qui compte, c'est
+      //    que l'ecran REDEVIENNE utilisable.
+      if (!mounted) return;
+      setState(() {
+        _envoi = false;
+        _echec = 'La connexion a echoue. Reessayez dans un instant.';
+      });
     }
   }
 

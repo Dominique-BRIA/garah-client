@@ -70,10 +70,23 @@ class ServiceSession extends ChangeNotifier {
   Future<void> connecter(String email, String motDePasse) async {
     final reponse = await _api.connecter(email, motDePasse);
 
+    // ⚠️ Le compte est IMBRIQUE dans la reponse : `utilisateur: { id, nom,
+    //    ... }`. Ces trois champs etaient lus a la racine — `utilisateurId`,
+    //    `nom`, `email` — ou ils n'ont jamais existe.
+    //
+    //    Le cast `as num` sur un `null` levait alors une TypeError. Elle
+    //    n'est PAS une ErreurApi : l'ecran de connexion ne la rattrapait pas,
+    //    son indicateur d'envoi restait arme, et le bouton tournait
+    //    indefiniment SANS message. C'est le symptome qu'on voyait.
+    final compte = reponse['utilisateur'] as Map<String, dynamic>?;
+    if (compte == null) {
+      throw ErreurApi(0, 'Reponse inattendue du serveur.');
+    }
+
     _utilisateur = (
-      id: (reponse['utilisateurId'] as num).toInt(),
-      nom: (reponse['nom'] as String?) ?? email,
-      email: (reponse['email'] as String?) ?? email,
+      id: (compte['id'] as num).toInt(),
+      nom: (compte['nom'] as String?) ?? email,
+      email: (compte['email'] as String?) ?? email,
     );
 
     await _retenirLeCookie();

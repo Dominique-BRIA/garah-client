@@ -45,6 +45,33 @@ class ErreurApi implements Exception {
 class ClientApi {
   ClientApi({http.Client? transport}) : _http = transport ?? http.Client();
 
+  /// Le champ qui porte le jeton d'acces dans la reponse de connexion.
+  ///
+  /// ⚠️ Il etait lu sous le nom `jetonAcces`. Le serveur envoie `jeton`, et
+  ///    l'a toujours envoye. Le mobile lisait donc `null`, tous les appels
+  ///    suivants partaient sans autorisation, et rien ne le disait.
+  static const champJeton = 'jeton';
+
+  /// Le cookie de session, cote boutique.
+  ///
+  /// ⚠️ Il etait cherche sous le nom `rafraichissement`, que le serveur n'a
+  ///    JAMAIS employe. Le cookie n'etait donc jamais capture, et la session
+  ///    mourait au premier rafraichissement.
+  ///
+  /// ⚠️ Le back-office range la sienne sous `garah_refresh_admin` (D-33). Le
+  ///    mobile est du cote boutique : il ne doit pas lire celui-la.
+  static const cookieSession = 'garah_refresh_boutique';
+
+  /// L'en-tete exige par le serveur sur `/api/auth/rafraichir` et
+  /// `/api/auth/deconnexion` (FiltreOrigineCsrf).
+  ///
+  /// ⚠️ Il n'etait envoye nulle part : les deux routes repondaient 403, et le
+  ///    rafraichissement echouait meme quand tout le reste etait juste.
+  ///
+  /// Une application native n'est pas concernee par le CSRF, mais la route ne
+  /// distingue pas ses appelants : elle l'exige de tout le monde.
+  static const enteteClient = 'X-Garah-Client';
+
   final http.Client _http;
 
   String? _jeton;
@@ -152,14 +179,15 @@ class ClientApi {
         Uri.parse('$urlApi/api/auth/rafraichir'),
         headers: {
           'Accept': 'application/json',
-          'Cookie': 'rafraichissement=$_rafraichissement',
+          enteteClient: 'mobile',
+          'Cookie': '$cookieSession=$_rafraichissement',
         },
       );
       if (reponse.statusCode != 200) {
         return false;
       }
       final corps = jsonDecode(utf8.decode(reponse.bodyBytes));
-      _jeton = corps['jetonAcces'] as String?;
+      _jeton = corps[champJeton] as String?;
       _lireLeCookie(reponse);
       return _jeton != null;
     } catch (_) {
@@ -180,7 +208,7 @@ class ClientApi {
     for (final morceau in brut.split(',')) {
       final paire = morceau.split(';').first.trim();
       final egal = paire.indexOf('=');
-      if (egal > 0 && paire.substring(0, egal) == 'rafraichissement') {
+      if (egal > 0 && paire.substring(0, egal) == cookieSession) {
         _rafraichissement = paire.substring(egal + 1);
         return;
       }
@@ -220,7 +248,7 @@ class ClientApi {
 
     final corps =
         jsonDecode(utf8.decode(reponse.bodyBytes)) as Map<String, dynamic>;
-    _jeton = corps['jetonAcces'] as String?;
+    _jeton = corps[champJeton] as String?;
     _lireLeCookie(reponse);
     return corps;
   }

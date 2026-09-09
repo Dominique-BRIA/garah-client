@@ -76,6 +76,19 @@ class _EcranAccueilState extends State<EcranAccueil> {
     } on ErreurApi catch (e) {
       _erreur = e.message;
       _tendances = const [];
+    } catch (_) {
+      // 🎯 LE FILET, derive de la branche ci-dessus.
+      //
+      //    Ne rattraper que `ErreurApi` semble propre : c'est ce que leve la
+      //    couche reseau. Mais tout ce qui casse APRES la reponse — un champ
+      //    absent, un cast qui echoue — leve autre chose, l'exception
+      //    s'echappe, et l'indicateur d'attente reste arme : l'ecran tourne
+      //    indefiniment SANS message.
+      //
+      //    C'est exactement ce qui rendait la connexion impossible sur mobile.
+      //    Le defaut etait ici aussi, dans chaque ecran, en attente.
+      _erreur = 'Une erreur inattendue est survenue. Reessayez.';
+      _tendances = const [];
     }
 
     try {
@@ -91,6 +104,19 @@ class _EcranAccueilState extends State<EcranAccueil> {
     } on ErreurApi catch (e) {
       _autres = const [];
       _erreur ??= e.message;
+    } catch (_) {
+      // 🎯 LE FILET, derive de la branche ci-dessus.
+      //
+      //    Ne rattraper que `ErreurApi` semble propre : c'est ce que leve la
+      //    couche reseau. Mais tout ce qui casse APRES la reponse — un champ
+      //    absent, un cast qui echoue — leve autre chose, l'exception
+      //    s'echappe, et l'indicateur d'attente reste arme : l'ecran tourne
+      //    indefiniment SANS message.
+      //
+      //    C'est exactement ce qui rendait la connexion impossible sur mobile.
+      //    Le defaut etait ici aussi, dans chaque ecran, en attente.
+      _autres = const [];
+      _erreur ??= 'Une erreur inattendue est survenue. Reessayez.';
     }
 
     try {
