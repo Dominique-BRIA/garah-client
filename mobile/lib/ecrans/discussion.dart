@@ -305,7 +305,9 @@ class _EcranDiscussionState extends State<EcranDiscussion> {
                   //    bulle : a 11 px, l'accent du nom ne tient que 4,2:1 en
                   //    sombre (le primaire moins encore), sous le 4,5:1
                   //    exige d'un petit texte. Le texte tient 17,9 et 16,9.
-                  color: context.estSombre ? Jetons.sombreTexte : Jetons.clairTexte,
+                  color: context.estSombre
+                      ? Jetons.sombreTexte
+                      : Jetons.clairTexte,
                 ),
               ),
               const SizedBox(height: 4),

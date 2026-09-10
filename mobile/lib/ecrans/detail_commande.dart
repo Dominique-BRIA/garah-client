@@ -391,9 +391,9 @@ class _EcranDetailCommandeState extends State<EcranDetailCommande> {
           // le recopier a la main dans le champ de l'autre ecran est la
           // premiere occasion de se tromper d'un caractere.
           InkWell(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => EcranSuivi(numero: n)),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => EcranSuivi(numero: n))),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
