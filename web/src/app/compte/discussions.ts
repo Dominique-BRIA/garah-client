@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { Page } from '../../modeles/catalogue';
 import { RetourCompte } from './retour-compte';
@@ -12,6 +12,8 @@ interface VueConversation {
   readonly statut: string;
   readonly dateCreation: string;
   readonly dateCloture: string | null;
+  /** L'Assistance GARAH : épinglée en tête, jamais close. */
+  readonly assistance: boolean;
 }
 
 const LIBELLES: Record<string, { texte: string; classe: string }> = {
@@ -43,6 +45,70 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
       <h1>Mes discussions</h1>
       <p class="entete__aide">Questions, négociations, suivi d’un problème.</p>
     </header>
+
+    <!-- 🎯 L'ASSISTANCE GARAH, ÉPINGLÉE EN TÊTE.
+         Jusqu'ici une discussion ne naissait que du bouton « Contacter » d'une
+         fiche produit : pour une question sur une livraison, un paiement, un
+         compte, il n'y avait pas de porte. Celle-ci est toujours là, et c'est
+         aussi par elle que GARAH vous écrit.
+
+         ⚠️ Elle NAÎT DU PREMIER MESSAGE, pas d'un clic : tant qu'elle
+            n'existe pas, la carte ouvre une zone de saisie. Créée à la simple
+            ouverture, elle laisserait un dossier vide chez l'équipe. -->
+    @if (!chargement() && !erreur()) {
+      <section class="assistance">
+        @if (assistance(); as a) {
+          <a class="gb-carte gb-cliquable assistance__carte" [routerLink]="['/mes-discussions', a.id]">
+            <svg class="assistance__icone" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 5h14v10H9.5L5 19V5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+            <path d="M8.5 9h7M8.5 12h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+            <span class="assistance__texte">
+              <span class="assistance__titre">Assistance GARAH</span>
+              <span class="assistance__aide">{{ etatAssistance(a.statut) }}</span>
+            </span>
+            <svg class="assistance__fleche" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          </a>
+        } @else if (redactionAssistance()) {
+          <div class="gb-carte assistance__redaction">
+            <p class="assistance__titre">Assistance GARAH</p>
+            <textarea class="gb-champ zone" rows="4" maxlength="5000"
+                      aria-label="Votre message à l’Assistance GARAH"
+                      placeholder="Votre question, sur une commande, un paiement, votre compte…"
+                      [ngModel]="messageAssistance()"
+                      (ngModelChange)="messageAssistance.set($event)"></textarea>
+            @if (echecAssistance(); as e) { <p class="gb-alerte">{{ e }}</p> }
+            <div class="boutons">
+              <button type="button" class="gb-btn gb-btn--secondaire" (click)="annulerAssistance()">
+                Annuler
+              </button>
+              <button type="button" class="gb-btn gb-btn--primaire"
+                      [disabled]="messageAssistance().trim().length === 0 || envoiAssistance()"
+                      (click)="envoyerAssistance()">
+                @if (envoiAssistance()) { Envoi… } @else { Envoyer }
+              </button>
+            </div>
+          </div>
+        } @else {
+          <button type="button" class="gb-carte gb-cliquable assistance__carte"
+                  (click)="redactionAssistance.set(true)">
+            <svg class="assistance__icone" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 5h14v10H9.5L5 19V5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+            <path d="M8.5 9h7M8.5 12h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+            <span class="assistance__texte">
+              <span class="assistance__titre">Assistance GARAH</span>
+              <span class="assistance__aide">Une question ? Écrivez-nous, à tout moment.</span>
+            </span>
+            <svg class="assistance__fleche" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          </button>
+        }
+      </section>
+    }
 
 
     @if (ouverture()) {
@@ -88,11 +154,14 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
       </div>
     } @else if (chargement()) {
       <div class="gb-etat"><p>Chargement…</p></div>
-    } @else if (conversations().length === 0) {
-      <p class="gb-etat gb-attenue">Vous n’avez aucune discussion en cours.</p>
+    } @else if (autres().length === 0) {
+      <p class="gb-etat gb-attenue">
+        @if (assistance()) { Aucune autre discussion pour le moment. }
+        @else { Vous n’avez aucune discussion en cours. }
+      </p>
     } @else {
       <div class="liste">
-        @for (c of conversations(); track c.id) {
+        @for (c of autres(); track c.id) {
           <a class="gb-carte gb-cliquable fil" [routerLink]="['/mes-discussions', c.id]">
             <div class="fil__tete">
               <p class="fil__sujet">{{ c.sujet }}</p>
@@ -139,8 +208,35 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
     .fil__sujet { margin: 0; font-size: 0.92rem; font-weight: 600; }
     .fil__date { margin: 0; font-size: 0.75rem; color: var(--texte-attenue); }
 
+    .assistance { padding: 1.25rem 1.25rem 0; }
+
+    .assistance__carte {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      padding: 1rem;
+      border: 1px solid color-mix(in srgb, var(--primaire) 30%, transparent);
+      background: color-mix(in srgb, var(--primaire) 6%, var(--surface));
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    /* ⚠️ --primaire-texte et non --primaire : l'indigo de la charte tombe sous
+       4,5:1 sur ce fond teinté, dans un thème comme dans l'autre. */
+    .assistance__icone { width: 26px; height: 26px; flex-shrink: 0; color: var(--primaire-texte); }
+    .assistance__texte { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+    .assistance__titre { margin: 0; font-size: 0.95rem; font-weight: 700; }
+    .assistance__aide { font-size: 0.8rem; color: var(--texte-attenue); }
+    .assistance__fleche { width: 16px; height: 16px; flex-shrink: 0; color: var(--texte-attenue); }
+    .assistance__redaction { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
     @media (min-width: 900px) {
-      .entete, .actions, .liste { padding-left: 0; padding-right: 0; }
+      .entete, .actions, .liste, .assistance { padding-left: 0; padding-right: 0; }
+      .assistance { max-width: 44rem; }
       .formulaire { margin-left: 0; margin-right: 0; max-width: 44rem; }
       .liste { max-width: 44rem; }
     }
@@ -168,6 +264,21 @@ export class Discussions {
     }
     return null;
   });
+
+  private readonly router = inject(Router);
+
+  /** L'Assistance GARAH, si elle existe déjà : elle naît du premier message. */
+  protected readonly assistance = computed(
+    () => this.conversations().find((c) => c.assistance) ?? null,
+  );
+
+  /** Les autres discussions : l'Assistance est épinglée au-dessus, pas répétée. */
+  protected readonly autres = computed(() => this.conversations().filter((c) => !c.assistance));
+
+  protected readonly redactionAssistance = signal(false);
+  protected readonly messageAssistance = signal('');
+  protected readonly envoiAssistance = signal(false);
+  protected readonly echecAssistance = signal<string | null>(null);
 
   constructor() {
     queueMicrotask(() => this.charger());
@@ -229,6 +340,48 @@ export class Discussions {
             e instanceof HttpErrorResponse && e.status === 0
               ? 'Pas de connexion. Votre texte est conservé : réessayez.'
               : 'La discussion n’a pas pu être ouverte.',
+          );
+        },
+      });
+  }
+
+  /** Ce que la carte épinglée dit de l'Assistance, selon son état. */
+  protected etatAssistance(statut: string): string {
+    if (statut === 'WAITING' || statut === 'ASSIGNED') {
+      return this.libelle(statut);
+    }
+    return 'Une question ? Écrivez-nous, à tout moment.';
+  }
+
+  protected annulerAssistance(): void {
+    this.redactionAssistance.set(false);
+    this.messageAssistance.set('');
+    this.echecAssistance.set(null);
+  }
+
+  /** Le premier message : il crée l'Assistance, puis on ouvre son fil. */
+  protected envoyerAssistance(): void {
+    const contenu = this.messageAssistance().trim();
+    if (!contenu || this.envoiAssistance()) {
+      return;
+    }
+    this.envoiAssistance.set(true);
+    this.echecAssistance.set(null);
+
+    this.http
+      .post<{ conversationId: number }>('/api/conversations/assistance/messages', { contenu })
+      .subscribe({
+        next: (m) => {
+          this.envoiAssistance.set(false);
+          void this.router.navigate(['/mes-discussions', m.conversationId]);
+        },
+        error: (e: unknown) => {
+          this.envoiAssistance.set(false);
+          // Le texte reste dans le champ : le perdre ferait tout réécrire.
+          this.echecAssistance.set(
+            e instanceof HttpErrorResponse && e.status === 0
+              ? 'Pas de connexion. Votre texte est conservé : réessayez.'
+              : 'Votre message n’a pas pu partir.',
           );
         },
       });

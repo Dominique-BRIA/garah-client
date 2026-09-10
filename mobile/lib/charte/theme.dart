@@ -280,4 +280,11 @@ extension CouleursGarah on BuildContext {
   ///    valeur pour les deux themes aurait rendu le slogan illisible la
   ///    moitie du temps, et un slogan illisible ne sert a rien.
   Color get slogan => estSombre ? Jetons.sombreSlogan : Jetons.clairSlogan;
+
+  /// L'indigo des icônes et des textes posés sur un fond teinté.
+  ///
+  /// ⚠️ Pas `Jetons.primaire` : il tombe sous 4,5 contre 1 sur un fond teinté
+  ///    d'indigo, dans les deux thèmes. Même raison que [slogan].
+  Color get primaireTexte =>
+      estSombre ? Jetons.sombrePrimaireTexte : Jetons.clairPrimaireTexte;
 }

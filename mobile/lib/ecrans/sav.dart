@@ -333,6 +333,9 @@ class _EcranDiscussionsState extends State<EcranDiscussions> {
   ///    session existe, et une seule fois par compte.
   int? _chargePour;
 
+  /// Vrai pendant l'envoi de la première question à l'Assistance.
+  bool _envoiAssistance = false;
+
   Future<void> _charger() async {
     setState(() {
       _chargement = true;
@@ -420,37 +423,169 @@ class _EcranDiscussionsState extends State<EcranDiscussions> {
   }
 
   Widget _corps(BuildContext context) {
-    return _chargement
-        ? const Center(child: CircularProgressIndicator())
-        : _erreur != null
-        ? EtatVide(
-            message: _erreur!,
-            libelleAction: 'Réessayer',
-            surAction: _charger,
-          )
-        : _conversations.isEmpty
-        ? const EtatVide(
-            message: 'Vous n’avez aucune discussion en cours.',
-            detail: 'Le bouton « Contacter » d’une fiche produit en ouvre une.',
-          )
-        : RefreshIndicator(
-            onRefresh: _charger,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-              children: [
-                for (final c in _conversations) _uneCarte(context, c),
-                const SizedBox(height: 10),
-                Text(
-                  'Touchez une discussion pour la lire et répondre.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.5,
-                    color: context.texteAttenue,
-                  ),
-                ),
-              ],
+    if (_chargement) return const Center(child: CircularProgressIndicator());
+    if (_erreur != null) {
+      return EtatVide(
+        message: _erreur!,
+        libelleAction: 'Réessayer',
+        surAction: _charger,
+      );
+    }
+
+    final assistance = _conversations
+        .where((c) => c['assistance'] == true)
+        .firstOrNull;
+    final autres = _conversations
+        .where((c) => c['assistance'] != true)
+        .toList();
+
+    return RefreshIndicator(
+      onRefresh: _charger,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+        children: [
+          // 🎯 L'ASSISTANCE GARAH, ÉPINGLÉE EN TÊTE. Jusqu'ici une discussion
+          //    ne naissait que du bouton « Contacter » d'une fiche produit :
+          //    pour une question sur une livraison ou un compte, il n'y avait
+          //    pas de porte. Celle-ci est toujours là, et c'est aussi par elle
+          //    que GARAH écrit au client.
+          _carteAssistance(context, assistance),
+          const SizedBox(height: 18),
+          if (autres.isEmpty)
+            Text(
+              'Vos autres discussions apparaîtront ici. Le bouton « Contacter » '
+              'd’une fiche produit en ouvre une.',
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.5,
+                color: context.texteAttenue,
+              ),
+            )
+          else ...[
+            for (final c in autres) _uneCarte(context, c),
+            const SizedBox(height: 10),
+            Text(
+              'Touchez une discussion pour la lire et répondre.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: context.texteAttenue,
+              ),
             ),
-          );
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _carteAssistance(BuildContext context, Map<String, dynamic>? a) {
+    final aide = switch (a?['statut'] as String?) {
+      'WAITING' => 'En attente d’un conseiller',
+      'ASSIGNED' => 'Un conseiller vous suit',
+      _ => 'Une question ? Écrivez-nous, à tout moment.',
+    };
+
+    return InkWell(
+      onTap: _envoiAssistance ? null : () => _ouvrirAssistance(a),
+      borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Jetons.primaire.withValues(alpha: 0.07),
+          border: Border.all(color: Jetons.primaire.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.support_agent, color: context.primaireTexte, size: 26),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Assistance GARAH',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    aide,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: context.texteAttenue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_envoiAssistance)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(Icons.chevron_right, color: context.texteAttenue),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Ouvre l'Assistance — ou la fait naître de la première question.
+  ///
+  /// ⚠️ Elle NAÎT DU PREMIER MESSAGE, jamais d'un simple appui : créée à
+  ///    l'ouverture, elle laisserait un dossier vide chez l'équipe à chaque
+  ///    fois qu'un client la regarde sans rien écrire.
+  Future<void> _ouvrirAssistance(Map<String, dynamic>? existante) async {
+    final navigateur = Navigator.of(context);
+    final messager = ScaffoldMessenger.of(context);
+    final api = Services.de(context).api;
+
+    var id = (existante?['id'] as num?)?.toInt();
+
+    if (id == null) {
+      final texte = await showDialog<String>(
+        context: context,
+        builder: (_) => const _PremiereQuestion(),
+      );
+      if (texte == null || texte.isEmpty || !mounted) return;
+
+      setState(() => _envoiAssistance = true);
+      try {
+        final m =
+            await api.poster('/api/conversations/assistance/messages', {
+                  'contenu': texte,
+                })
+                as Map<String, dynamic>;
+        id = (m['conversationId'] as num).toInt();
+      } on ErreurApi catch (e) {
+        if (!mounted) return;
+        setState(() => _envoiAssistance = false);
+        messager.showSnackBar(SnackBar(content: Text(e.message)));
+        return;
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _envoiAssistance = false);
+        messager.showSnackBar(
+          const SnackBar(
+            content: Text('Votre message n’a pas pu partir. Réessayez.'),
+          ),
+        );
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _envoiAssistance = false);
+    }
+
+    final aOuvrir = id;
+    await navigateur.push(
+      MaterialPageRoute(
+        builder: (_) => EcranDiscussion(id: aOuvrir, sujet: 'Assistance GARAH'),
+      ),
+    );
+    // Au retour, l'état a pu changer : un conseiller a pu la prendre.
+    if (mounted) _charger();
   }
 
   Widget _uneCarte(BuildContext context, Map<String, dynamic> c) {
@@ -506,6 +641,59 @@ class _EcranDiscussionsState extends State<EcranDiscussions> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// La première question à l'Assistance GARAH.
+///
+/// ⚠️ Un widget à état pour une seule raison : il possède son contrôleur de
+///    saisie, et doit le libérer. Un contrôleur créé par l'appelant pour une
+///    boîte de dialogue fuirait à chaque ouverture.
+class _PremiereQuestion extends StatefulWidget {
+  const _PremiereQuestion();
+
+  @override
+  State<_PremiereQuestion> createState() => _PremiereQuestionState();
+}
+
+class _PremiereQuestionState extends State<_PremiereQuestion> {
+  final _texte = TextEditingController();
+
+  @override
+  void dispose() {
+    _texte.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Assistance GARAH'),
+      content: TextField(
+        controller: _texte,
+        autofocus: true,
+        minLines: 3,
+        maxLines: 6,
+        maxLength: 5000,
+        decoration: const InputDecoration(
+          hintText:
+              'Votre question, sur une commande, un paiement, votre compte…',
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          onPressed: _texte.text.trim().isEmpty
+              ? null
+              : () => Navigator.of(context).pop(_texte.text.trim()),
+          child: const Text('Envoyer'),
+        ),
+      ],
     );
   }
 }
