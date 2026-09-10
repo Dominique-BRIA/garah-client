@@ -13,12 +13,10 @@
     "Les valeurs viennent du depot garah (frontend/projects/garah-ui/theme).",
     "Elles doivent y rester identiques : trois frontends, une seule marque."
   ],
-
   "constantes": {
     "_pourquoi": "Ne changent NI avec le theme, NI avec l'application. Une marque qui change de couleur selon l'ecran cesse d'etre une marque.",
     "marque": "#31aef3"
   },
-
   "intentions": {
     "_pourquoi": "Les couleurs de SENS. Elles gardent la meme valeur en clair et en sombre : un danger n'est pas moins dangereux la nuit.",
     "primaire": "#6366f1",
@@ -31,7 +29,6 @@
     "danger": "#ef4444",
     "info": "#0ea5e9"
   },
-
   "clair": {
     "fond": "#f8fafc",
     "texte": "#0f172a",
@@ -45,9 +42,9 @@
     "champFond": "rgba(255, 255, 255, 0.8)",
     "champFondActif": "#ffffff",
     "champBordure": "rgba(0, 0, 0, 0.18)",
-  "accentTitre": "#2E0F52"
+    "accentTitre": "#2E0F52",
+    "slogan": "#047857"
   },
-
   "sombre": {
     "fond": "#0c0c14",
     "texte": "#f3f4f6",
@@ -61,22 +58,20 @@
     "champFond": "rgba(255, 255, 255, 0.03)",
     "champFondActif": "rgba(26, 26, 42, 0.95)",
     "champBordure": "rgba(255, 255, 255, 0.18)",
-  "accentTitre": "#AA3BFF"
+    "accentTitre": "#AA3BFF",
+    "slogan": "#10B981"
   },
-
   "rayons": {
     "petit": 8,
     "moyen": 12,
     "grand": 20
   },
-
   "polices": {
     "_pourquoi": "Une pile de repli COMPLETE derriere chaque police. Sur un telephone d'entree de gamme avec une connexion lente, la police distante peut ne jamais arriver — et le texte doit rester lisible.",
     "texte": "'Outfit', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif",
     "mono": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace",
     "familleFlutter": "Outfit"
   },
-
   "cibles": {
     "_pourquoi": "La plus petite cible tactile acceptable. En dessous, on rate le bouton une fois sur trois — et sur un ecran de commande, rater signifie recommencer.",
     "tactileMin": 44

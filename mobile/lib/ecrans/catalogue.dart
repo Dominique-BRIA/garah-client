@@ -329,12 +329,7 @@ class _EcranCatalogueState extends State<EcranCatalogue> {
       child: GridView.builder(
         controller: _defilement,
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.62,
-        ),
+        gridDelegate: grilleProduits(context),
         itemCount: _produits.length + (_chargementSuite ? 2 : 0),
         itemBuilder: (context, i) {
           if (i >= _produits.length) {

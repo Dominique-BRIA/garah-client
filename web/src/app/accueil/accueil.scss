@@ -22,10 +22,32 @@
 
 .marque__embleme { width: 26px; height: 26px; }
 
+.marque__texte {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
 .marque__nom {
   font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: 0.11em;
+}
+
+// ⚠️ PETIT ET ESPACE, jamais gros. Un slogan qui rivalise de taille avec le
+//    nom en prend la place : on lit la phrase et plus la marque.
+//
+// ⚠️ Le vert vient de --slogan et NON de --succes : le vert vif tombe a 2,5
+//    contre 1 sur le fond clair, illisible. --slogan porte deux valeurs, une
+//    par theme.
+.marque__slogan {
+  margin-top: 0.15rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--slogan);
+  white-space: nowrap;
 }
 
 .recherche {

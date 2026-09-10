@@ -306,3 +306,83 @@ class Libelle extends StatelessWidget {
     );
   }
 }
+
+/// La grille des cartes produit.
+///
+/// ## 🎯 « Plus que 2 » se faisait couper en deux
+///
+/// La grille fixait la forme de la carte par un `childAspectRatio` de 0,62 —
+/// une hauteur figée, quel que soit ce qu'il fallait y mettre. Or le contenu
+/// n'y tenait pas : sur un écran de 393 points, le bloc de texte demande une
+/// vingtaine de points de plus que la place laissée. Et la carte, en
+/// `clipBehavior: Clip.antiAlias`, coupait proprement le dépassement.
+///
+/// ⚠️ Ce qui tombait, c'est la DERNIÈRE ligne : l'étiquette de stock. Celle
+///    qui dit « dépêchez-vous ». Rien n'avertissait — une carte tronquée
+///    ressemble à une carte sans étiquette.
+///
+/// ## ⚠️ Le réglage de police du téléphone aggrave le tout
+///
+/// Android laisse grossir les polices du système, et c'est un réglage
+/// courant. À 130 %, il manque une soixantaine de points au lieu de vingt.
+///
+/// ⚠️ La tentation est de bloquer l'agrandissement sur ces cartes. C'est
+///    exactement ce qu'il ne faut pas faire : quelqu'un qui a grossi ses
+///    polices ne l'a pas fait par curiosité. On calcule donc la hauteur
+///    RÉELLE, au réglage en cours.
+///
+/// ⚠️ Ce calcul vit à côté de la carte, et non dans les écrans. Deux écrans
+///    affichent cette grille ; une copie dans chacun aurait divergé au premier
+///    ajustement — et la coupure serait revenue dans un seul des deux.
+SliverGridDelegateWithFixedCrossAxisCount grilleProduits(
+  BuildContext context, {
+  double margeHorizontale = 16,
+  int colonnes = 2,
+  double espacement = 12,
+}) {
+  final largeurCarte =
+      (MediaQuery.sizeOf(context).width -
+          margeHorizontale * 2 -
+          espacement * (colonnes - 1)) /
+      colonnes;
+
+  return SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: colonnes,
+    mainAxisSpacing: espacement,
+    crossAxisSpacing: espacement,
+    // La photo est carrée : sa hauteur EST la largeur de la carte. Le reste
+    // est le bloc de texte, mesuré au réglage de police en cours.
+    mainAxisExtent: largeurCarte + hauteurTexteCarte(context),
+  );
+}
+
+/// La hauteur du bloc de texte d'une carte, au réglage de police en cours.
+///
+/// ⚠️ Les valeurs suivent CELLES DE LA CARTE, juste au-dessus. Les changer
+///    d'un côté sans l'autre fait revenir la coupure — c'est pour cette raison
+///    que les deux vivent dans le même fichier.
+double hauteurTexteCarte(BuildContext context) {
+  final echelle = MediaQuery.textScalerOf(context);
+
+  // Le facteur appliqué par Flutter entre la taille de police et la hauteur
+  // de ligne rendue. 1,3 est une majoration prudente : mieux vaut deux pixels
+  // de vide en bas qu'une étiquette coupée.
+  double ligne(double taille) => echelle.scale(taille) * 1.3;
+
+  return 8 + // padding haut
+      10 + // padding bas
+      ligne(10) + // la catégorie
+      ligne(13.5) * 2 + // le nom, deux lignes au plus
+      ligne(11) + // le vendeur
+      3 + // l'écart avant le prix
+      ligne(14.5) + // le prix
+      // L'étiquette de stock : son écart, son texte et ses marges internes.
+      //
+      // ⚠️ La place est RÉSERVÉE même quand il n'y a pas d'étiquette. Sans
+      //    cela, les cartes d'une même rangée n'auraient pas la même hauteur
+      //    utile, et la grille se mettrait à respirer différemment d'une
+      //    ligne à l'autre selon les stocks.
+      5 +
+      ligne(10) +
+      8;
+}

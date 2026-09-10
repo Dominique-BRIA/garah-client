@@ -47,6 +47,7 @@ class EcranAccueil extends StatefulWidget {
 class _EcranAccueilState extends State<EcranAccueil> {
   List<ResumeProduit> _tendances = const [];
   List<ResumeProduit> _autres = const [];
+
   /// L'arbre aplati : parents PUIS enfants.
   ///
   /// ⚠️ L'accueil écartait tout ce qui avait un parent — `where(parentId ==
@@ -176,31 +177,54 @@ class _EcranAccueilState extends State<EcranAccueil> {
         //    Les deux valeurs viennent des jetons : les écrire à la main ici
         //    ferait diverger la vitrine du reste au premier ajustement.
         titleSpacing: 16,
-        title: Text.rich(
-          TextSpan(
-            children: [
-              const TextSpan(
-                text: 'GAR',
-                style: TextStyle(color: Jetons.marque),
-              ),
+        // ⚠️ Le titre passe en Column : le slogan vit SOUS le mot, pas à côté.
+        //    `crossAxisAlignment.start` le cale à gauche sur le G de GARAH —
+        //    centré, il flotterait sous un mot dont il n'a pas la largeur.
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text.rich(
               TextSpan(
-                text: 'AH',
-                // ⚠️ `accentTitre` et non `accent` : un violet presque noir
-                //    sur fond clair, l'accent vif sur fond sombre. La même
-                //    valeur pour les deux ferait disparaître « AH » dans l'un
-                //    des deux thèmes — voir CouleursGarah.accentTitre.
-                style: TextStyle(color: context.accentTitre),
+                children: [
+                  const TextSpan(
+                    text: 'GAR',
+                    style: TextStyle(color: Jetons.marque),
+                  ),
+                  TextSpan(
+                    text: 'AH',
+                    // ⚠️ `accentTitre` et non `accent` : un violet presque
+                    //    noir sur fond clair, l'accent vif sur fond sombre. La
+                    //    même valeur pour les deux ferait disparaître « AH »
+                    //    dans l'un des deux thèmes.
+                    style: TextStyle(color: context.accentTitre),
+                  ),
+                ],
               ),
-            ],
-          ),
-          style: const TextStyle(
-            // 26 au lieu de 18 : c'est le nom de la boutique, pas un titre
-            // d'écran. Il n'y a rien au-dessus de lui.
-            fontSize: 26,
-            letterSpacing: 3,
-            fontWeight: FontWeight.w800,
-            height: 1.1,
-          ),
+              style: const TextStyle(
+                // 26 au lieu de 18 : c'est le nom de la boutique, pas un titre
+                // d'écran. Il n'y a rien au-dessus de lui.
+                fontSize: 26,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w800,
+                height: 1.1,
+              ),
+            ),
+            // ⚠️ PETIT ET ESPACÉ, jamais gros. Un slogan qui rivalise de
+            //    taille avec le nom en prend la place : on lit la phrase et
+            //    plus la marque. À 9 px très espacés, il se lit comme une
+            //    signature — ce qu'il est.
+            Text(
+              'AU-DELÀ DES FRONTIÈRES',
+              style: TextStyle(
+                fontSize: 9,
+                letterSpacing: 1.6,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+                color: context.slogan,
+              ),
+            ),
+          ],
         ),
         actions: [
           ListenableBuilder(
@@ -382,14 +406,7 @@ class _EcranAccueilState extends State<EcranAccueil> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              // Plus haut que large : la photo est carrée, et il reste le nom,
-              // le vendeur, le prix et parfois une étiquette.
-              childAspectRatio: 0.62,
-            ),
+            gridDelegate: grilleProduits(context),
             itemCount: produits.length,
             itemBuilder: (context, i) => VignetteProduit(
               produit: produits[i],

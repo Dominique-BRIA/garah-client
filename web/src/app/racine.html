@@ -5,7 +5,13 @@
   <div class="entete__interieur">
     <a routerLink="/" class="marque" aria-label="Accueil GARAH">
       <gb-marque />
-      <span>GARAH</span>
+      <!-- ⚠️ Le slogan vit SOUS le mot, donc les deux sont empiles. Le lien
+           porte deja aria-label="Accueil GARAH" : le slogan est masque aux
+           lecteurs d ecran pour ne pas le faire relire a chaque tabulation. -->
+      <span class="marque__texte">
+        <span class="marque__mot">GARAH</span>
+        <span class="marque__slogan" aria-hidden="true">Au-delà des frontières</span>
+      </span>
     </a>
 
     <nav class="liens" aria-label="Navigation">
