@@ -20,7 +20,12 @@ interface VueMessage {
   readonly id: number;
   /** Present sur le message pousse en temps reel comme sur celui du fil. */
   readonly conversationId: number;
-  readonly expediteurId: number;
+  /*
+   * ⚠️ NUL quand c'est GARAH qui ecrit — un colis parti, par exemple. Le
+   * systeme n'est pas un utilisateur. Toute comparaison doit donc supporter
+   * null, et c'est ce que fait deja `estMoi` : null n'est jamais moi.
+   */
+  readonly expediteurId: number | null;
   readonly contenu: string;
   readonly dateEnvoi: string;
 }
@@ -158,6 +163,12 @@ const ETATS: Record<string, { texte: string; classe: string }> = {
         <p class="gb-libelle">Échanges</p>
         @for (m of c.messages; track m.id) {
           <div class="bulle" [class.bulle--moi]="estMoi(m)">
+            @if (m.expediteurId === null) {
+              <!-- Dire QUI parle : sans ce nom, une annonce se lirait comme la
+                   reponse d'un conseiller, et on lui repondrait en attendant
+                   quelqu'un qui n'a rien ecrit. -->
+              <p class="bulle__auteur">GARAH</p>
+            }
             <p class="bulle__texte">{{ m.contenu }}</p>
             <p class="bulle__date">{{ dateHeure(m.dateEnvoi) }}</p>
           </div>
@@ -235,6 +246,11 @@ const ETATS: Record<string, { texte: string; classe: string }> = {
 
     .bulle__texte { margin: 0; font-size: 0.88rem; line-height: 1.55; white-space: pre-line; }
     .bulle__date { margin: 0.3rem 0 0; font-size: 0.7rem; color: var(--texte-attenue); }
+    /* ⚠️ --texte, et non un violet de la marque. Mesure sur la bulle : a
+       11 px, --accent-titre ne tient que 4,0:1 en sombre (--primaire 3,95),
+       sous le 4,5:1 exige d'un petit texte. Aucune couleur d'accent de la
+       charte ne passe dans les DEUX themes ; --texte tient 15,8 et 16,0. */
+    .bulle__auteur { margin: 0 0 0.25rem; font-size: 0.7rem; font-weight: 700; color: var(--texte); }
 
     .close {
       padding: 1.5rem 1.25rem;
@@ -461,17 +477,22 @@ export class Discussion {
   }
 
   protected libelleFil(statut: string): string {
+    // ⚠️ INFORMATION tombait dans le dernier cas : une annonce se serait
+    //    affichee « En attente d'un conseiller », alors que personne n'attend
+    //    rien — ni le client, ni l'equipe.
     return statut === 'CLOSED'
       ? 'Close'
       : statut === 'ASSIGNED'
         ? 'Un conseiller vous suit'
-        : 'En attente d’un conseiller';
+        : statut === 'INFORMATION'
+          ? 'Information'
+          : 'En attente d’un conseiller';
   }
 
   protected classeFil(statut: string): string {
     return statut === 'CLOSED'
       ? 'gb-etiquette--neutre'
-      : statut === 'ASSIGNED'
+      : statut === 'ASSIGNED' || statut === 'INFORMATION'
         ? 'gb-etiquette--info'
         : 'gb-etiquette--alerte';
   }

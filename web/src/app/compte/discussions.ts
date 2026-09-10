@@ -18,6 +18,9 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
   // ⚠️ Les codes du serveur sont en anglais ; l'écran, lui, parle français.
   //    Les afficher tels quels apprendrait au client un vocabulaire interne
   //    qui n'est pas le sien.
+  // Ouverte par GARAH pour vous prevenir (un colis parti). Personne n'attend
+  // de reponse — mais vous pouvez en ecrire une, et un conseiller la lira.
+  INFORMATION: { texte: 'Information', classe: 'gb-etiquette--info' },
   WAITING: { texte: 'En attente d’un conseiller', classe: 'gb-etiquette--alerte' },
   ASSIGNED: { texte: 'Un conseiller vous suit', classe: 'gb-etiquette--info' },
   CLOSED: { texte: 'Close', classe: 'gb-etiquette--neutre' },

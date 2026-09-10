@@ -290,6 +290,26 @@ class _EcranDiscussionState extends State<EcranDiscussion> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ⚠️ Un expediteur NUL, c'est GARAH qui ecrit — un colis parti.
+            //    Le dire : sans ce nom, l'annonce se lirait comme la reponse
+            //    d'un conseiller, et on lui repondrait en attendant quelqu'un
+            //    qui n'a rien ecrit.
+            if (auteur == null) ...[
+              Text(
+                'GARAH',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  // ⚠️ La couleur du TEXTE, posee explicitement depuis la
+                  //    charte, et non un violet de la marque. Mesure sur la
+                  //    bulle : a 11 px, l'accent du nom ne tient que 4,2:1 en
+                  //    sombre (le primaire moins encore), sous le 4,5:1
+                  //    exige d'un petit texte. Le texte tient 17,9 et 16,9.
+                  color: context.estSombre ? Jetons.sombreTexte : Jetons.clairTexte,
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
             Text(
               (m['contenu'] as String?) ?? '',
               style: const TextStyle(fontSize: 14, height: 1.45),

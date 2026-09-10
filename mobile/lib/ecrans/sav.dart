@@ -311,6 +311,9 @@ class EcranDiscussions extends StatefulWidget {
 
 class _EcranDiscussionsState extends State<EcranDiscussions> {
   static const _statuts = <String, ({String texte, Color? couleur})>{
+    // Ouverte par GARAH pour prevenir (un colis parti). Personne n'attend de
+    // reponse — mais le client peut en ecrire une, et un conseiller la lira.
+    'INFORMATION': (texte: 'Information', couleur: Jetons.info),
     'WAITING': (texte: 'En attente d’un conseiller', couleur: Jetons.alerte),
     'ASSIGNED': (texte: 'Un conseiller vous suit', couleur: Jetons.info),
     'CLOSED': (texte: 'Close', couleur: null),
