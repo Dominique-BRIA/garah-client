@@ -190,6 +190,10 @@ class _EcranCommandeState extends State<EcranCommande> {
 
     final api = Services.de(context).api;
     final navigateur = Navigator.of(context);
+    // ⚠️ Capture AVANT le await. Lire Services.de(context) apres coup
+    //    traverserait une frontiere asynchrone : l ecran peut avoir ete quitte
+    //    entre-temps, et le contexte ne vaut plus rien.
+    final panierLocal = Services.de(context).panier;
     try {
       final commande =
           await api.poster('/api/commandes', {
@@ -197,6 +201,15 @@ class _EcranCommandeState extends State<EcranCommande> {
                 'langue': 'fr',
               })
               as Map<String, dynamic>;
+
+      // ⚠️ LE PANIER LOCAL SE VIDE ICI, et pas avant.
+      //
+      //    La commande est passée : le serveur a consommé SON panier, et le
+      //    local n'a plus de raison d'être. Le vider plus tôt — à la
+      //    synchronisation, comme le faisait l'ancienne fusion — viderait
+      //    l'écran du panier dès qu'on revient en arrière depuis ici, sur
+      //    une commande pas encore passée.
+      await panierLocal.vider();
 
       if (!mounted) return;
       setState(() => _envoi = false);

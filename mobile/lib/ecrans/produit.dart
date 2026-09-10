@@ -7,6 +7,7 @@ import '../modeles/catalogue.dart';
 import '../services/panier_local.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
+import 'panier.dart';
 
 /// La fiche produit.
 ///
@@ -158,6 +159,8 @@ class _EcranProduitState extends State<EcranProduit> {
     final palier = _palierActif;
     if (f == null || d == null || palier == null) return;
 
+    final messager = ScaffoldMessenger.of(context);
+
     await Services.de(context).panier.ajouter(
       LigneLocale(
         varianteId: d.id,
@@ -170,7 +173,33 @@ class _EcranProduitState extends State<EcranProduit> {
         prixIndicatif: palier.prixUnitaire,
       ),
     );
-    if (mounted) setState(() => _ajoute = true);
+    if (!mounted) return;
+    setState(() => _ajoute = true);
+
+    // ⚠️ LE LIBELLÉ DU BOUTON NE SUFFISAIT PAS.
+    //
+    //    « Ajouter au panier » devenait « Ajouté au panier » — au même
+    //    endroit, dans la même couleur, à une lettre près. On appuyait, rien
+    //    ne semblait bouger, et on appuyait une seconde fois.
+    //
+    //    Le bandeau se voit parce qu'il arrive d'ailleurs, et il porte le
+    //    geste suivant : aller au panier. Sans ce raccourci, il faudrait
+    //    chercher l'onglet du bas pour vérifier que l'article y est.
+    messager.hideCurrentSnackBar();
+    messager.showSnackBar(
+      SnackBar(
+        content: Text(
+          _quantite > 1 ? '$_quantite articles ajoutés' : 'Article ajouté',
+        ),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Voir le panier',
+          onPressed: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const EcranPanier())),
+        ),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------

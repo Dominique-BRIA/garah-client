@@ -90,7 +90,16 @@ class ServiceSession extends ChangeNotifier {
     );
 
     await _retenirLeCookie();
-    await _fusionnerLePanier();
+    // ⚠️ Son echec ne doit PAS faire echouer la connexion. On vient de
+    //    saisir un mot de passe : renvoyer sur l ecran de connexion parce
+    //    qu un panier n a pas suivi ferait recommencer pour rien. Il
+    //    repartira au moment de commander, ou la synchronisation est
+    //    refaite.
+    try {
+      await synchroniserLePanier();
+    } catch (_) {
+      // Volontairement avale : voir ci-dessus.
+    }
     notifyListeners();
   }
 
@@ -108,21 +117,38 @@ class ServiceSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// La fusion du panier, à la connexion et à ce moment seulement.
+  /// Pousse le panier du téléphone vers le serveur.
   ///
-  /// ⚠️ Son échec ne doit PAS faire échouer la connexion. On vient de saisir
-  ///    un mot de passe : renvoyer sur l'écran de connexion parce qu'un
-  ///    panier n'a pas fusionné ferait recommencer pour rien.
-  Future<void> _fusionnerLePanier() async {
+  /// ## 🎯 « Votre panier est vide » sur un panier qui ne l'était pas
+  ///
+  /// L'écran de commande lit `/api/panier` — le panier du SERVEUR, seul juge
+  /// du stock et du prix. Le panier local, lui, ne partait qu'à la CONNEXION.
+  ///
+  /// Quelqu'un déjà connecté qui ajoutait un article ne l'envoyait donc nulle
+  /// part : le panier affichait « 1 article, 2 000 FCFA », et l'écran suivant
+  /// annonçait un panier vide. Les deux écrans disaient vrai — ils ne
+  /// regardaient pas le même panier.
+  ///
+  /// ## ⚠️ NON DESTRUCTIF, contrairement à ce qui se faisait
+  ///
+  /// La fusion vidait le panier local. C'était tenable quand elle n'arrivait
+  /// qu'une fois, à la connexion ; appelée avant chaque commande, elle
+  /// viderait l'écran du panier dès qu'on revient en arrière depuis la
+  /// commande.
+  ///
+  /// Le local reste donc ce qu'on affiche, le serveur ce qui fait foi au
+  /// moment de payer. Le panier local est vidé quand la commande est
+  /// RÉELLEMENT passée, et pas avant.
+  ///
+  /// ## ⚠️ La rejouer est sans danger
+  ///
+  /// `/api/panier/fusion` garde le PLUS GRAND des deux côtés, jamais la somme.
+  /// La rejouer dix fois donne le même panier — c'est ce qui permet de
+  /// l'appeler à chaque passage en commande sans multiplier les quantités.
+  Future<void> synchroniserLePanier() async {
     final lignes = _panier.pourFusion();
     if (lignes.isEmpty) return;
-    try {
-      await _api.poster('/api/panier/fusion', {'lignes': lignes});
-      await _panier.vider();
-    } catch (_) {
-      // Le panier local reste tel quel : il repartira à la prochaine
-      // connexion, et la fusion est idempotente.
-    }
+    await _api.poster('/api/panier/fusion', {'lignes': lignes});
   }
 
   void _poser(Map<String, dynamic> profil) {

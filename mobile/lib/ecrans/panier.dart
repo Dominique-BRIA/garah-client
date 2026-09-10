@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../api/client_api.dart';
 import '../charte/jetons.dart';
 import '../charte/theme.dart';
 import '../modeles/catalogue.dart';
@@ -200,8 +201,6 @@ class _Recapitulatif extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final services = Services.de(context);
-
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -246,34 +245,100 @@ class _Recapitulatif extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ListenableBuilder(
-                listenable: services.session,
-                builder: (context, _) => FilledButton(
-                  onPressed: () {
-                    // 🎯 La connexion arrive ICI, jamais avant. On remplit son
-                    //    panier sans compte ; l'exiger au premier « Ajouter »
-                    //    ferait fuir. C'est aussi le moment où le panier local
-                    //    fusionne avec celui du serveur.
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => services.session.connecte
-                            ? const EcranCommande()
-                            : const EcranConnexion(),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    services.session.connecte
-                        ? 'Passer commande'
-                        : 'Se connecter pour commander',
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(width: double.infinity, child: _BoutonCommander()),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Le bouton qui mène à la commande.
+///
+/// ## ⚠️ IL SYNCHRONISE LE PANIER AVANT DE PARTIR
+///
+/// L'écran de commande lit le panier du SERVEUR, seul juge du stock et du
+/// prix. Le panier local, lui, ne partait qu'à la connexion : quelqu'un déjà
+/// connecté qui ajoutait un article ne l'envoyait nulle part, et l'écran
+/// suivant annonçait « Votre panier est vide » sur un panier qui affichait un
+/// article et son montant.
+///
+/// ## ⚠️ Un widget à état, pour une seule raison
+///
+/// La synchronisation est un appel réseau. Sans état, on ne pourrait ni
+/// désactiver le bouton pendant l'envoi — deux tapes donneraient deux
+/// commandes — ni dire pourquoi rien ne se passe quand le réseau est lent.
+class _BoutonCommander extends StatefulWidget {
+  const _BoutonCommander();
+
+  @override
+  State<_BoutonCommander> createState() => _BoutonCommanderState();
+}
+
+class _BoutonCommanderState extends State<_BoutonCommander> {
+  bool _envoi = false;
+
+  Future<void> _continuer() async {
+    final services = Services.de(context);
+    final navigateur = Navigator.of(context);
+    final messager = ScaffoldMessenger.of(context);
+
+    // 🎯 La connexion arrive ICI, jamais avant. On remplit son panier sans
+    //    compte ; l'exiger au premier « Ajouter » ferait fuir. La
+    //    synchronisation se fera juste après, à la connexion.
+    if (!services.session.connecte) {
+      navigateur.push(
+        MaterialPageRoute(builder: (_) => const EcranConnexion()),
+      );
+      return;
+    }
+
+    setState(() => _envoi = true);
+    try {
+      await services.session.synchroniserLePanier();
+    } on ErreurApi catch (e) {
+      if (!mounted) return;
+      setState(() => _envoi = false);
+      // ⚠️ On NE PART PAS. L'écran de commande afficherait un panier vide ou
+      //    incomplet, et le client croirait avoir perdu son panier. Mieux vaut
+      //    rester ici, où il le voit, et dire que le réseau n'a pas suivi.
+      messager.showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _envoi = false);
+      messager.showSnackBar(
+        const SnackBar(
+          content: Text('Votre panier n’a pas pu être envoyé. Réessayez.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _envoi = false);
+    navigateur.push(MaterialPageRoute(builder: (_) => const EcranCommande()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = Services.de(context).session;
+
+    return ListenableBuilder(
+      listenable: session,
+      builder: (context, _) => FilledButton(
+        onPressed: _envoi ? null : _continuer,
+        child: _envoi
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                session.connecte
+                    ? 'Passer commande'
+                    : 'Se connecter pour commander',
+              ),
       ),
     );
   }
