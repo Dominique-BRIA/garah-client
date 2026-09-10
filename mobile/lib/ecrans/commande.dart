@@ -42,6 +42,7 @@ class _LignePanier {
     required this.quantite,
     required this.montantLigne,
     required this.vendable,
+    required this.prixNegocie,
   });
 
   final String designation;
@@ -52,11 +53,17 @@ class _LignePanier {
   /// le montrer AVANT le clic, pas après le refus.
   final bool vendable;
 
+  /// Vrai si le prix vient d'une négociation acceptée dans une discussion.
+  /// Le dire : sinon le client verrait un prix différent de la fiche produit
+  /// et croirait à une erreur.
+  final bool prixNegocie;
+
   factory _LignePanier.de(Map<String, dynamic> j) => _LignePanier(
     designation: (j['designation'] as String?) ?? 'Article',
     quantite: (j['quantite'] as num?)?.toInt() ?? 0,
     montantLigne: (j['montantLigne'] as num?) ?? 0,
     vendable: (j['vendable'] as bool?) ?? true,
+    prixNegocie: (j['prixNegocie'] as bool?) ?? false,
   );
 }
 
@@ -433,7 +440,9 @@ class _EcranCommandeState extends State<EcranCommande> {
                 ),
               ),
               Text(
-                '${l.quantite} article(s)',
+                l.prixNegocie
+                    ? '${l.quantite} article(s) · prix négocié'
+                    : '${l.quantite} article(s)',
                 style: TextStyle(fontSize: 12, color: context.texteAttenue),
               ),
             ],

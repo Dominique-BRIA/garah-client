@@ -239,8 +239,13 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
           <!-- Le retour porte l'identifiant de LA commande : le formulaire
                s'ouvre déjà rempli du bon contexte, et personne ne recopie un
                numéro. -->
-          <a [routerLink]="['/mes-retours']" [queryParams]="{ commande: c.id }"
-             class="gb-btn gb-btn--secondaire">Retourner des articles</a>
+          <!-- ⚠️ Seulement une fois la marchandise RECUE. Proposer de
+               retourner ce qu'on n'a pas encore en main ferait cliquer pour
+               un refus : le serveur ne retourne que ce qui a été remis. -->
+          @if (c.statut === 'RETIREE') {
+            <a [routerLink]="['/mes-retours']" [queryParams]="{ commande: c.id }"
+               class="gb-btn gb-btn--secondaire">Retourner des articles</a>
+          }
           <a routerLink="/mes-reclamations" class="gb-btn gb-btn--secondaire">
             Ouvrir une réclamation
           </a>

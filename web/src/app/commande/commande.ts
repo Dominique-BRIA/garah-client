@@ -26,6 +26,12 @@ interface LignePanier {
   readonly prixUnitaire: number;
   readonly montantLigne: number;
   readonly vendable: boolean;
+  /*
+   * Vrai si le prix vient d'une negociation acceptee dans une discussion.
+   * Le dire : sinon le client verrait un prix different de la fiche produit
+   * et croirait a une erreur — dans un sens ou dans l'autre.
+   */
+  readonly prixNegocie?: boolean;
 }
 
 interface ContenuPanier {
@@ -107,7 +113,10 @@ interface ContenuPanier {
 
           @for (l of c.lignes; track l.varianteId) {
             <div class="recap__ligne">
-              <span>{{ l.designation }} <span class="gb-attenue">× {{ l.quantite }}</span></span>
+              <span>
+                {{ l.designation }} <span class="gb-attenue">× {{ l.quantite }}</span>
+                @if (l.prixNegocie) { <span class="gb-attenue">· prix négocié</span> }
+              </span>
               <span class="gb-montant">{{ montant(l.montantLigne) }}</span>
             </div>
           }
