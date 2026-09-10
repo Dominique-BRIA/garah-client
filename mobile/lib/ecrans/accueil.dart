@@ -32,7 +32,13 @@ class EcranAccueil extends StatefulWidget {
   const EcranAccueil({super.key, required this.surChercher});
 
   /// Bascule vers l'onglet de recherche, plutôt que d'empiler un écran.
-  final VoidCallback surChercher;
+  /// Emmene au catalogue. La categorie est nulle quand on vient de la barre
+  /// de recherche : on veut alors tout le catalogue, sans filtre.
+  ///
+  /// ⚠️ ELLE ETAIT ABSENTE. Toutes les puces appelaient le meme rappel sans
+  ///    argument : on basculait sur le catalogue et la categorie etait
+  ///    perdue en chemin. Cliquer sur « VETEMENTS » ne filtrait rien.
+  final void Function(Categorie? categorie) surChercher;
 
   @override
   State<EcranAccueil> createState() => _EcranAccueilState();
@@ -242,7 +248,7 @@ class _EcranAccueilState extends State<EcranAccueil> {
   Widget _barreDeRecherche(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
     child: InkWell(
-      onTap: widget.surChercher,
+      onTap: () => widget.surChercher(null),
       borderRadius: BorderRadius.circular(Jetons.rayonPetit),
       child: IgnorePointer(
         // Un champ FACTICE : appuyer dessus bascule sur l'onglet de
@@ -310,7 +316,7 @@ class _EcranAccueilState extends State<EcranAccueil> {
           separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (context, i) => ActionChip(
             label: Text(_categories[i].nom),
-            onPressed: widget.surChercher,
+            onPressed: () => widget.surChercher(_categories[i]),
             shape: StadiumBorder(side: BorderSide(color: context.bordure)),
           ),
         ),

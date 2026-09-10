@@ -28,7 +28,10 @@ import 'produit.dart';
 /// une fois sur deux — et surtout, chaque page rechargée est un aller-retour
 /// de plus sur une connexion qui les compte.
 class EcranCatalogue extends StatefulWidget {
-  const EcranCatalogue({super.key});
+  const EcranCatalogue({super.key, required this.categorie});
+
+  /// Le canal par lequel l accueil demande une categorie.
+  final ValueNotifier<Categorie?> categorie;
 
   @override
   State<EcranCatalogue> createState() => _EcranCatalogueState();
@@ -53,15 +56,51 @@ class _EcranCatalogueState extends State<EcranCatalogue> {
   bool _chargementSuite = false;
   String? _erreur;
 
+  /// La catégorie appliquée, s'il y en a une.
+  ///
+  /// ⚠️ On garde la CATÉGORIE et non son seul identifiant : il faut son nom
+  ///    pour écrire « Vêtements » sur la puce du filtre actif. Sans ce nom, il
+  ///    faudrait le rechercher dans une liste que cet écran ne charge pas.
+  Categorie? _categorie;
+
   @override
   void initState() {
     super.initState();
     _defilement.addListener(_peutEtreLaSuite);
+    _categorie = widget.categorie.value;
+    widget.categorie.addListener(_surCategorieDemandee);
     _charger(remiseAZero: true);
+  }
+
+  /// L'accueil demande une catégorie.
+  ///
+  /// ⚠️ Cet écran est maintenu en vie d'un onglet à l'autre : c'est le seul
+  ///    chemin par lequel un nouveau filtre peut l'atteindre. Un paramètre de
+  ///    constructeur ne le reconstruirait pas.
+  void _surCategorieDemandee() {
+    final demandee = widget.categorie.value;
+    if (demandee?.id == _categorie?.id) return;
+    setState(() {
+      _categorie = demandee;
+      // La recherche tapée n'a plus de sens sous une autre catégorie : on
+      // repart propre plutôt que de croiser deux filtres qu'on n'a pas
+      // choisis ensemble.
+      _filtre = '';
+      _saisie.clear();
+    });
+    _charger(remiseAZero: true);
+  }
+
+  /// Retire le filtre de catégorie.
+  void _retirerLaCategorie() {
+    // On passe par le canal : sinon l'accueil croirait le filtre encore posé,
+    // et recliquer la même catégorie ne ferait rien.
+    widget.categorie.value = null;
   }
 
   @override
   void dispose() {
+    widget.categorie.removeListener(_surCategorieDemandee);
     _attente?.cancel();
     _saisie.dispose();
     _defilement.dispose();
@@ -107,6 +146,9 @@ class _EcranCatalogueState extends State<EcranCatalogue> {
 
     final parametres = <String, String>{'page': '$_page', 'taille': '24'};
     if (_filtre.isNotEmpty) parametres['recherche'] = _filtre;
+    // ⚠️ Il MANQUAIT : la requete ne portait aucune categorie, si bien que
+    //    cliquer sur une puce de l accueil basculait ici sans rien filtrer.
+    if (_categorie != null) parametres['categorieId'] = '${_categorie!.id}';
     final requete = parametres.entries
         .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
         .join('&');
@@ -163,33 +205,61 @@ class _EcranCatalogueState extends State<EcranCatalogue> {
       appBar: AppBar(
         title: const Text('Catalogue'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(64),
+          // ⚠️ La hauteur suit la présence de la puce. Une valeur fixe
+          //    rognerait le champ de saisie dès qu'un filtre est posé.
+          preferredSize: Size.fromHeight(_categorie == null ? 64 : 108),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: TextField(
-              controller: _saisie,
-              onChanged: _saisi,
-              onSubmitted: (t) {
-                _attente?.cancel();
-                _filtre = t.trim();
-                _charger(remiseAZero: true);
-              },
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Nom, vendeur, catégorie…',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _saisie.text.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: 'Effacer',
-                        onPressed: () {
-                          _saisie.clear();
-                          _filtre = '';
-                          _charger(remiseAZero: true);
-                        },
-                      ),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _saisie,
+                  onChanged: _saisi,
+                  onSubmitted: (t) {
+                    _attente?.cancel();
+                    _filtre = t.trim();
+                    _charger(remiseAZero: true);
+                  },
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Nom, vendeur, catégorie…',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _saisie.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: 'Effacer',
+                            onPressed: () {
+                              _saisie.clear();
+                              _filtre = '';
+                              _charger(remiseAZero: true);
+                            },
+                          ),
+                  ),
+                ),
+                // ⚠️ LE FILTRE DOIT SE VOIR, ET SE RETIRER.
+                //
+                //    Une liste filtrée sans rien qui le dise ressemble à un
+                //    catalogue à moitié vide : on croit que les articles ont
+                //    disparu, pas qu'on les a masqués. Et sans le moyen de
+                //    l'enlever, il faut deviner qu'il faut repasser par
+                //    l'accueil.
+                if (_categorie != null) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: InputChip(
+                      label: Text(_categorie!.nom),
+                      onDeleted: _retirerLaCategorie,
+                      deleteIcon: const Icon(Icons.close, size: 18),
+                      deleteButtonTooltipMessage: 'Retirer le filtre',
+                      avatar: const Icon(Icons.filter_alt_outlined, size: 18),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
@@ -210,23 +280,48 @@ class _EcranCatalogueState extends State<EcranCatalogue> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_produits.isEmpty) {
-      return _filtre.isEmpty
-          ? const EtatVide(message: 'Le catalogue est vide pour le moment.')
-          : EtatVide(
-              message: 'Rien ne correspond à « $_filtre ».',
-              // On dit SUR QUOI porte la recherche : sans cette phrase, on
-              // essaie une référence ou un numéro de commande, et on conclut
-              // que la boutique est vide.
-              detail:
-                  'La recherche porte sur le nom de l’article, '
-                  'le vendeur et la catégorie.',
-              libelleAction: 'Voir tout le catalogue',
-              surAction: () {
-                _saisie.clear();
-                _filtre = '';
-                _charger(remiseAZero: true);
-              },
-            );
+      // ⚠️ LE MESSAGE DOIT NOMMER CE QUI FILTRE, sinon « le catalogue est
+      //    vide » se lit comme « la boutique n'a rien » alors qu'on regarde
+      //    une catégorie sans article. Et « Voir tout le catalogue » doit
+      //    retirer TOUS les filtres — retirer la recherche en laissant la
+      //    catégorie rendrait une liste encore vide, sur un bouton qui promet
+      //    le contraire.
+      if (_filtre.isEmpty && _categorie == null) {
+        return const EtatVide(message: 'Le catalogue est vide pour le moment.');
+      }
+
+      final String message;
+      if (_filtre.isEmpty) {
+        message = 'Aucun article dans « ${_categorie!.nom} ».';
+      } else if (_categorie == null) {
+        message = 'Rien ne correspond à « $_filtre ».';
+      } else {
+        message =
+            'Rien ne correspond à « $_filtre » dans « ${_categorie!.nom} ».';
+      }
+
+      return EtatVide(
+        message: message,
+        // On dit SUR QUOI porte la recherche : sans cette phrase, on essaie
+        // une référence ou un numéro de commande, et on conclut que la
+        // boutique est vide.
+        detail: _filtre.isEmpty
+            ? null
+            : 'La recherche porte sur le nom de l’article, le vendeur et la '
+                  'catégorie.',
+        libelleAction: 'Voir tout le catalogue',
+        surAction: () {
+          _saisie.clear();
+          _filtre = '';
+          // Passe par le canal : sinon l'accueil croirait le filtre encore
+          // posé, et recliquer la même catégorie ne ferait rien.
+          if (_categorie != null) {
+            widget.categorie.value = null;
+          } else {
+            _charger(remiseAZero: true);
+          }
+        },
+      );
     }
 
     return RefreshIndicator(
