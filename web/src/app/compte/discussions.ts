@@ -110,43 +110,10 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
       </section>
     }
 
-
-    @if (ouverture()) {
-      <section class="gb-carte formulaire">
-        <p class="gb-libelle">Nouvelle discussion</p>
-
-        <label class="champ">
-          <span class="gb-libelle">Sujet</span>
-          <input type="text" class="gb-champ" name="sujet" maxlength="200"
-                 placeholder="Négocier un prix, poser une question…"
-                 [ngModel]="sujet()" (ngModelChange)="sujet.set($event)" />
-        </label>
-
-        <label class="champ">
-          <span class="gb-libelle">Votre message</span>
-          <textarea class="gb-champ zone" name="message" rows="5" maxlength="5000"
-                    [ngModel]="message()" (ngModelChange)="message.set($event)"></textarea>
-        </label>
-
-        @if (manque(); as m) { <p class="manque">{{ m }}</p> }
-        @if (echec(); as e) { <p class="gb-alerte">{{ e }}</p> }
-
-        <div class="boutons">
-          <button type="button" class="gb-btn gb-btn--secondaire" (click)="annuler()">Annuler</button>
-          <button type="button" class="gb-btn gb-btn--primaire"
-                  [disabled]="manque() !== null || envoi()" (click)="envoyer()">
-            @if (envoi()) { Envoi… } @else { Envoyer }
-          </button>
-        </div>
-      </section>
-    } @else {
-      <div class="actions">
-        <button type="button" class="gb-btn gb-btn--primaire" (click)="ouvrir()">
-          Démarrer une discussion
-        </button>
-      </div>
-    }
-
+    <!-- ⚠️ Plus de « Démarrer une discussion » à sujet libre : une question
+         générale va à l'Assistance, juste au-dessus, et une question sur un
+         article part du bouton « Contacter » de sa fiche. Deux portes pour la
+         même question éparpillaient les échanges. -->
     @if (erreur(); as m) {
       <div class="gb-etat">
         <p>{{ m }}</p>
@@ -156,8 +123,8 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
       <div class="gb-etat"><p>Chargement…</p></div>
     } @else if (autres().length === 0) {
       <p class="gb-etat gb-attenue">
-        @if (assistance()) { Aucune autre discussion pour le moment. }
-        @else { Vous n’avez aucune discussion en cours. }
+        Vos autres discussions apparaîtront ici. Le bouton « Contacter » d’une
+        fiche produit en ouvre une.
       </p>
     } @else {
       <div class="liste">
@@ -178,19 +145,7 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
     .entete h1 { margin: 0; font-size: 1.3rem; font-weight: 700; }
     .entete__aide { margin: 0.25rem 0 0; font-size: 0.82rem; color: var(--texte-attenue); }
 
-    .actions { padding: 1.25rem 1.25rem 0; }
-
-    .formulaire {
-      margin: 1.25rem;
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.9rem;
-    }
-
-    .champ { display: block; }
     .zone { min-height: 7rem; resize: vertical; line-height: 1.5; }
-    .manque { margin: 0; font-size: 0.8rem; color: var(--alerte); }
     .boutons { display: flex; gap: 0.6rem; justify-content: flex-end; flex-wrap: wrap; }
 
     .liste { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
@@ -235,9 +190,8 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
     .assistance__redaction { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
 
     @media (min-width: 900px) {
-      .entete, .actions, .liste, .assistance { padding-left: 0; padding-right: 0; }
+      .entete, .liste, .assistance { padding-left: 0; padding-right: 0; }
       .assistance { max-width: 44rem; }
-      .formulaire { margin-left: 0; margin-right: 0; max-width: 44rem; }
       .liste { max-width: 44rem; }
     }
   `,
@@ -248,22 +202,6 @@ export class Discussions {
   protected readonly conversations = signal<readonly VueConversation[]>([]);
   protected readonly chargement = signal(true);
   protected readonly erreur = signal<string | null>(null);
-
-  protected readonly ouverture = signal(false);
-  protected readonly sujet = signal('');
-  protected readonly message = signal('');
-  protected readonly envoi = signal(false);
-  protected readonly echec = signal<string | null>(null);
-
-  protected readonly manque = computed<string | null>(() => {
-    if (this.sujet().trim().length < 3) {
-      return 'Donnez un sujet à votre discussion.';
-    }
-    if (this.message().trim().length < 5) {
-      return 'Écrivez votre message.';
-    }
-    return null;
-  });
 
   private readonly router = inject(Router);
 
@@ -302,47 +240,6 @@ export class Discussions {
         );
       },
     });
-  }
-
-  protected ouvrir(): void {
-    this.ouverture.set(true);
-    this.echec.set(null);
-  }
-
-  protected annuler(): void {
-    this.ouverture.set(false);
-    this.sujet.set('');
-    this.message.set('');
-    this.echec.set(null);
-  }
-
-  protected envoyer(): void {
-    if (this.manque() !== null || this.envoi()) {
-      return;
-    }
-    this.envoi.set(true);
-    this.echec.set(null);
-
-    this.http
-      .post<VueConversation>('/api/conversations', {
-        sujet: this.sujet().trim(),
-        premierMessage: this.message().trim(),
-      })
-      .subscribe({
-        next: (c) => {
-          this.envoi.set(false);
-          this.conversations.update((l) => [c, ...l]);
-          this.annuler();
-        },
-        error: (e: unknown) => {
-          this.envoi.set(false);
-          this.echec.set(
-            e instanceof HttpErrorResponse && e.status === 0
-              ? 'Pas de connexion. Votre texte est conservé : réessayez.'
-              : 'La discussion n’a pas pu être ouverte.',
-          );
-        },
-      });
   }
 
   /** Ce que la carte épinglée dit de l'Assistance, selon son état. */
