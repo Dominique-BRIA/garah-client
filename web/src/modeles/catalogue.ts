@@ -128,6 +128,31 @@ export interface Categorie {
   readonly nom: string;
   readonly slug: string;
   readonly parentId: number | null;
+  /**
+   * Les sous-categories.
+   *
+   * ⚠️ Le champ EXISTAIT cote serveur et n etait pas declare ici : la vitrine
+   * n affichait donc que les racines, et une sous-categorie creee au
+   * back-office restait invisible aux clients.
+   */
+  readonly enfants?: readonly Categorie[];
+}
+
+/**
+ * L arbre des categories, aplati — parents PUIS enfants, dans l ordre.
+ *
+ * ⚠️ On garde le `niveau` : une puce d enfant se dessine plus petite, sinon
+ *    « Informatique » et « Electronique » se ressemblent alors que l une
+ *    contient l autre.
+ */
+export function categoriesAplaties(
+  arbre: readonly Categorie[],
+  niveau = 0,
+): readonly { readonly categorie: Categorie; readonly niveau: number }[] {
+  return arbre.flatMap((c) => [
+    { categorie: c, niveau },
+    ...categoriesAplaties(c.enfants ?? [], niveau + 1),
+  ]);
 }
 
 // -----------------------------------------------------------------------------

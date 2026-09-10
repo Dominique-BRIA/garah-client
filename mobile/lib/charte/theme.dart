@@ -271,4 +271,13 @@ extension CouleursGarah on BuildContext {
   ///    être une.
   Color get accentTitre =>
       estSombre ? Jetons.sombreAccentTitre : Jetons.clairAccentTitre;
+
+  /// Le vert du slogan.
+  ///
+  /// ⚠️ DEUX VALEURS, et pour la meme raison que accentTitre : le vert vif
+  ///    de la marque tombe a 2,5 contre 1 sur le fond clair — un texte gris
+  ///    pale, illisible. La version foncee monte a 5,4 contre 1. Une seule
+  ///    valeur pour les deux themes aurait rendu le slogan illisible la
+  ///    moitie du temps, et un slogan illisible ne sert a rien.
+  Color get slogan => estSombre ? Jetons.sombreSlogan : Jetons.clairSlogan;
 }

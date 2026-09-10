@@ -40,9 +40,14 @@
   <section class="bloc">
     <p class="gb-libelle">Catégories</p>
     <div class="puces">
-      @for (c of categories(); track c.id) {
-        <a class="puce" [routerLink]="['/catalogue']" [queryParams]="{ categorieId: c.id }">
-          {{ c.nom }}
+      <!-- ⚠️ Les SOUS-CATÉGORIES aussi. Elles étaient renvoyées par le serveur
+           dans `enfants` et n'étaient tout simplement pas parcourues : une
+           sous-catégorie créée au back-office restait invisible aux clients. -->
+      @for (e of puces(); track e.categorie.id) {
+        <a class="puce" [class.puce--enfant]="e.niveau > 0"
+           [routerLink]="['/catalogue']"
+           [queryParams]="{ categorieId: e.categorie.id }">
+          {{ e.categorie.nom }}
         </a>
       }
     </div>

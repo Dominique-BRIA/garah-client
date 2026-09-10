@@ -1,9 +1,10 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import {
+  categoriesAplaties,
   Categorie,
   Page,
   ProduitTendance,
@@ -53,6 +54,15 @@ export class Accueil {
   protected readonly autres = signal<readonly ResumeProduit[]>([]);
   protected readonly chargementAutres = signal(true);
   protected readonly categories = signal<readonly Categorie[]>([]);
+
+  /**
+   * L'arbre aplati : parents puis enfants, dans l'ordre.
+   *
+   * <p>⚠️ On garde le niveau pour dessiner une puce d'enfant plus discrète.
+   * Sans cela « Informatique » et « Electronique » se ressemblent, alors que
+   * l'une contient l'autre.</p>
+   */
+  protected readonly puces = computed(() => categoriesAplaties(this.categories()));
 
   protected readonly chargement = signal(true);
   protected readonly erreur = signal<string | null>(null);

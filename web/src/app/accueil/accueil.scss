@@ -372,3 +372,22 @@
   .carte__image img { transition: none; }
   .carte:hover .carte__image img { transform: none; }
 }
+
+// Une SOUS-catégorie, plus discrète que sa parente.
+//
+// ⚠️ Sans cette distinction, « Informatique » et « Electronique » se
+//    ressemblent alors que la première contient la seconde — et l'on clique au
+//    hasard entre deux puces qui ne disent pas la même chose.
+.puce--enfant {
+  font-size: 0.74rem;
+  padding: 0.45rem 0.75rem;
+  opacity: 0.85;
+
+  // Le chevron dit « celle-ci est dedans ». Un simple décalage ne se verrait
+  // pas : les puces s'enroulent, et la ligne suivante recommence à gauche.
+  &::before {
+    content: '↳';
+    margin-right: 0.3rem;
+    opacity: 0.6;
+  }
+}

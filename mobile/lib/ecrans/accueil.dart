@@ -47,7 +47,12 @@ class EcranAccueil extends StatefulWidget {
 class _EcranAccueilState extends State<EcranAccueil> {
   List<ResumeProduit> _tendances = const [];
   List<ResumeProduit> _autres = const [];
-  List<Categorie> _categories = const [];
+  /// L'arbre aplati : parents PUIS enfants.
+  ///
+  /// ⚠️ L'accueil écartait tout ce qui avait un parent — `where(parentId ==
+  ///    null)` — et ne lisait jamais `enfants`. Une sous-catégorie créée au
+  ///    back-office restait donc invisible aux clients.
+  List<CategorieAplatie> _categories = const [];
 
   bool _chargement = true;
   String? _erreur;
@@ -126,11 +131,13 @@ class _EcranAccueilState extends State<EcranAccueil> {
     }
 
     try {
-      _categories = (await api.obtenir('/api/categories') as List<dynamic>)
+      final arbre = (await api.obtenir('/api/categories') as List<dynamic>)
           .map((e) => Categorie.de(e as Map<String, dynamic>))
-          .where((c) => c.parentId == null)
-          .take(6)
           .toList();
+      // ⚠️ On aplatit AVANT de couper : couper les racines à six aurait fait
+      //    disparaître les sous-catégories de la septième, alors qu'elles
+      //    tiennent dans la bande défilante.
+      _categories = categoriesAplaties(arbre).take(12).toList();
     } on ErreurApi {
       _categories = const [];
     }
@@ -314,11 +321,22 @@ class _EcranAccueilState extends State<EcranAccueil> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: _categories.length,
           separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (context, i) => ActionChip(
-            label: Text(_categories[i].nom),
-            onPressed: () => widget.surChercher(_categories[i]),
-            shape: StadiumBorder(side: BorderSide(color: context.bordure)),
-          ),
+          itemBuilder: (context, i) {
+            final e = _categories[i];
+            final enfant = e.niveau > 0;
+            return ActionChip(
+              // Le chevron dit « celle-ci est dedans ». Un simple retrait ne se
+              // verrait pas dans une bande qui défile horizontalement.
+              label: Text(
+                enfant ? '↳ ${e.categorie.nom}' : e.categorie.nom,
+                style: enfant
+                    ? TextStyle(fontSize: 12.5, color: context.texteAttenue)
+                    : null,
+              ),
+              onPressed: () => widget.surChercher(e.categorie),
+              shape: StadiumBorder(side: BorderSide(color: context.bordure)),
+            );
+          },
         ),
       ),
       const SizedBox(height: 20),

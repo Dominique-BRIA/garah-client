@@ -267,18 +267,51 @@ class Categorie {
     required this.id,
     required this.nom,
     required this.parentId,
+    this.enfants = const [],
   });
 
   final int id;
   final String nom;
   final int? parentId;
 
+  /// Les sous-catégories.
+  ///
+  /// ⚠️ Le champ EXISTAIT côté serveur et n'était pas lu ici : l'accueil
+  ///    écartait tout ce qui avait un parent, et une sous-catégorie créée au
+  ///    back-office restait invisible.
+  final List<Categorie> enfants;
+
   factory Categorie.de(Map<String, dynamic> j) => Categorie(
     id: (j['id'] as num).toInt(),
     nom: j['nom'] as String,
     parentId: (j['parentId'] as num?)?.toInt(),
+    enfants: ((j['enfants'] as List<dynamic>?) ?? const [])
+        .map((e) => Categorie.de(e as Map<String, dynamic>))
+        .toList(),
   );
 }
+
+/// Une catégorie et sa profondeur dans l'arbre.
+class CategorieAplatie {
+  const CategorieAplatie(this.categorie, this.niveau);
+  final Categorie categorie;
+
+  /// 0 pour une racine. ⚠️ Sert à dessiner une puce d'enfant plus discrète :
+  /// sans cela « Informatique » et « Electronique » se ressemblent alors que
+  /// l'une contient l'autre.
+  final int niveau;
+}
+
+/// L'arbre aplati — parents PUIS enfants, dans l'ordre.
+List<CategorieAplatie> categoriesAplaties(
+  List<Categorie> arbre, [
+  int niveau = 0,
+]) => [
+  for (final c in arbre) ...[
+    CategorieAplatie(c, niveau),
+    ...categoriesAplaties(c.enfants, niveau + 1),
+  ],
+];
 
 /// Un montant lisible : « 106 000 FCFA ».
 ///
