@@ -1,11 +1,15 @@
+<gb-retour-compte />
+
 <header class="entete">
-  <h1>Mon compte</h1>
+  <!-- « Mon profil » et non « Mon compte » : ce nom est maintenant celui
+       de l'écran des portes, et deux écrans du même nom font croire qu'on
+       n'a pas bougé. -->
+  <h1>Mon profil</h1>
   <button type="button" class="gb-btn gb-btn--secondaire" (click)="seDeconnecter()">
     Se déconnecter
   </button>
 </header>
 
-<gb-menu-compte />
 
 @if (chargement()) {
   <div class="gb-etat"><p>Chargement…</p></div>

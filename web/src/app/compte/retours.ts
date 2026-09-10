@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { Page, montantLisible } from '../../modeles/catalogue';
-import { MenuCompte } from './menu-compte';
+import { RetourCompte } from './retour-compte';
 
 interface LigneCommande {
   readonly id: number;
@@ -74,14 +74,15 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
  */
 @Component({
   selector: 'gb-retours',
-  imports: [FormsModule, RouterLink, MenuCompte],
+  imports: [FormsModule, RouterLink, RetourCompte],
   template: `
+    <gb-retour-compte />
+
     <header class="entete">
       <h1>Mes retours</h1>
       <p class="entete__aide">Un conseiller examine chaque demande.</p>
     </header>
 
-    <gb-menu-compte />
 
     @if (commande(); as c) {
       <section class="gb-carte formulaire">

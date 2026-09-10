@@ -26,8 +26,11 @@
          [routerLinkActiveOptions]="{ exact: true }" class="liens__lien">
         Accueil
       </a>
-      <a routerLink="/catalogue" routerLinkActive="liens__lien--actif" class="liens__lien">
-        Catalogue
+      <!-- ⚠️ « Mes discussions » a pris la place du catalogue. L'écran du
+           catalogue existe toujours : c'est la recherche, juste à côté, qui
+           y mène — une vitrine se parcourt en cherchant. -->
+      <a routerLink="/mes-discussions" routerLinkActive="liens__lien--actif" class="liens__lien">
+        Mes discussions
       </a>
       <a routerLink="/suivi" routerLinkActive="liens__lien--actif" class="liens__lien">
         Suivre un colis
@@ -63,7 +66,7 @@
       </a>
 
       @if (session.connecte()) {
-        <a routerLink="/mes-commandes" routerLinkActive="bouton--actif" class="bouton bouton--texte">
+        <a routerLink="/compte" routerLinkActive="bouton--actif" class="bouton bouton--texte">
           {{ session.nom() ?? 'Mon compte' }}
         </a>
       } @else {
@@ -172,12 +175,15 @@
     <span>Accueil</span>
   </a>
 
-  <a routerLink="/catalogue" routerLinkActive="barre__lien--actif" class="barre__lien">
+  <!-- ⚠️ « Discussions » et non « Mes discussions » : quatre cases sur un
+       écran de 360 px, et quinze caractères passeraient sur deux lignes.
+       L'application Android emploie le même mot dans sa barre du bas. -->
+  <a routerLink="/mes-discussions" routerLinkActive="barre__lien--actif" class="barre__lien">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7" />
-      <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+      <path d="M5 5h14v10H9.5L5 19V5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+      <path d="M8.5 9h7M8.5 12h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
     </svg>
-    <span>Chercher</span>
+    <span>Discussions</span>
   </a>
 
   <a routerLink="/panier" routerLinkActive="barre__lien--actif"
@@ -194,7 +200,7 @@
     <span>Panier</span>
   </a>
 
-  <a routerLink="/mes-commandes" routerLinkActive="barre__lien--actif" class="barre__lien">
+  <a routerLink="/compte" routerLinkActive="barre__lien--actif" class="barre__lien">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.7" />
       <path d="M5.5 20a6.5 6.5 0 0 1 13 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />

@@ -106,6 +106,12 @@ export const routes: Routes = [
     loadComponent: () => import('./commande/paiement').then((m) => m.Paiement),
   },
   {
+    // Le point d'entrée de l'espace personnel : des portes, rien d'autre.
+    path: 'compte',
+    canActivate: [gardeSession],
+    loadComponent: () => import('./compte/mon-compte').then((m) => m.MonCompte),
+  },
+  {
     path: 'mes-commandes',
     canActivate: [gardeSession],
     loadComponent: () => import('./compte/mes-commandes').then((m) => m.MesCommandes),

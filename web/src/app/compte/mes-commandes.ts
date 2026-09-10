@@ -3,8 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { Page, montantLisible } from '../../modeles/catalogue';
-import { MenuCompte } from './menu-compte';
-import { ServiceSession } from '../../services/session';
+import { RetourCompte } from './retour-compte';
 
 interface ResumeCommandeClient {
   readonly id: number;
@@ -39,21 +38,22 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
  */
 @Component({
   selector: 'gb-mes-commandes',
-  imports: [RouterLink, MenuCompte],
+  imports: [RouterLink, RetourCompte],
   template: `
+    <!-- La déconnexion et le nom sont partis sur « Mon compte » : cet écran
+         ne parle plus que des commandes. -->
+    <gb-retour-compte />
+
     <header class="entete">
       <div>
         <h1>Mes commandes</h1>
-        @if (session.nom(); as nom) {
-          <p class="entete__aide">{{ nom }}</p>
-        }
+        <p class="entete__aide">
+          Vos achats et leur état. Ouvrez une commande arrivée pour voir son code
+          de retrait.
+        </p>
       </div>
-      <button type="button" class="gb-btn gb-btn--secondaire" (click)="seDeconnecter()">
-        Se déconnecter
-      </button>
     </header>
 
-    <gb-menu-compte />
 
     @if (erreur(); as m) {
       <div class="gb-etat">
@@ -178,7 +178,6 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
 })
 export class MesCommandes {
   private readonly http = inject(HttpClient);
-  protected readonly session = inject(ServiceSession);
 
   protected readonly commandes = signal<readonly ResumeCommandeClient[]>([]);
   protected readonly chargement = signal(true);
@@ -201,12 +200,6 @@ export class MesCommandes {
         this.chargement.set(false);
         this.erreur.set('Vos commandes n’ont pas pu être chargées.');
       },
-    });
-  }
-
-  protected seDeconnecter(): void {
-    this.session.deconnecter().subscribe(() => {
-      window.location.href = '/';
     });
   }
 

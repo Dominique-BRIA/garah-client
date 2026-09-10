@@ -1,45 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../api/client_api.dart';
-import '../charte/jetons.dart';
 import '../charte/theme.dart';
-import '../modeles/catalogue.dart';
 import '../services/services.dart';
-import '../widgets/communs.dart';
 import 'connexion.dart';
 import 'inscription.dart';
-import 'detail_commande.dart';
 import 'favoris.dart';
+import 'mes_commandes.dart';
 import 'sav.dart';
 import 'suivi.dart';
-
-/// Un résumé de commande, tel que la liste l'affiche.
-class _ResumeCommande {
-  const _ResumeCommande({
-    required this.id,
-    required this.numero,
-    required this.statut,
-    required this.montantTotal,
-    required this.devise,
-    required this.nombreLignes,
-  });
-
-  final int id;
-  final String numero;
-  final String statut;
-  final num montantTotal;
-  final String devise;
-  final int nombreLignes;
-
-  factory _ResumeCommande.de(Map<String, dynamic> j) => _ResumeCommande(
-    id: (j['id'] as num).toInt(),
-    numero: (j['numero'] as String?) ?? '',
-    statut: (j['statut'] as String?) ?? '',
-    montantTotal: (j['montantTotal'] as num?) ?? 0,
-    devise: (j['devise'] as String?) ?? 'XAF',
-    nombreLignes: (j['lignes'] as List<dynamic>?)?.length ?? 0,
-  );
-}
 
 /// L'espace personnel.
 ///
@@ -47,67 +15,16 @@ class _ResumeCommande {
 ///
 /// Sans cela, l'écran affiche « Se connecter » une demi-seconde à chaque
 /// ouverture, sur un compte qui est en fait connecté — et on appuie dessus.
-class EcranCompte extends StatefulWidget {
+///
+/// ## 🎯 Des portes, et aucune liste
+///
+/// Les commandes s'affichaient ICI, entre l'en-tête et les autres rubriques.
+/// Vingt cartes empilées repoussaient « Ma liste » et « Mes discussions » tout
+/// en bas, hors de l'écran : on les croyait absentes. Chaque rubrique a
+/// maintenant son écran, et celui-ci n'en montre que les portes — comme
+/// l'écran « Mon compte » du web.
+class EcranCompte extends StatelessWidget {
   const EcranCompte({super.key});
-
-  @override
-  State<EcranCompte> createState() => _EcranCompteState();
-}
-
-class _EcranCompteState extends State<EcranCompte> {
-  List<_ResumeCommande> _commandes = const [];
-  bool _chargement = false;
-  String? _erreur;
-
-  /// La session dont on a déjà chargé les commandes.
-  ///
-  /// Sans ce garde, chaque reconstruction relancerait la requête — et un écran
-  /// qui se redessine souvent la relancerait souvent.
-  int? _chargePour;
-
-  Future<void> _charger() async {
-    final services = Services.de(context);
-    if (!services.session.connecte) return;
-
-    setState(() {
-      _chargement = true;
-      _erreur = null;
-    });
-
-    try {
-      final page = PageDe.de(
-        await services.api.obtenir('/api/commandes/miennes?taille=20'),
-        _ResumeCommande.de,
-      );
-      if (!mounted) return;
-      setState(() {
-        _commandes = page.contenu;
-        _chargement = false;
-      });
-    } on ErreurApi catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _chargement = false;
-        _erreur = e.message;
-      });
-    } catch (_) {
-      // 🎯 LE FILET, derive de la branche ci-dessus.
-      //
-      //    Ne rattraper que `ErreurApi` semble propre : c'est ce que leve la
-      //    couche reseau. Mais tout ce qui casse APRES la reponse — un champ
-      //    absent, un cast qui echoue — leve autre chose, l'exception
-      //    s'echappe, et l'indicateur d'attente reste arme : l'ecran tourne
-      //    indefiniment SANS message.
-      //
-      //    C'est exactement ce qui rendait la connexion impossible sur mobile.
-      //    Le defaut etait ici aussi, dans chaque ecran, en attente.
-      if (!mounted) return;
-      setState(() {
-        _chargement = false;
-        _erreur = 'Une erreur inattendue est survenue. Reessayez.';
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,18 +40,10 @@ class _EcranCompteState extends State<EcranCompte> {
           }
 
           if (!services.session.connecte) {
-            _chargePour = null;
             return _horsSession(context);
           }
 
-          final id = services.session.utilisateurId;
-          if (_chargePour != id) {
-            _chargePour = id;
-            // Après le rendu : appeler setState pendant un build lèverait.
-            WidgetsBinding.instance.addPostFrameCallback((_) => _charger());
-          }
-
-          return _mesCommandes(context, services);
+          return _espace(context, services);
         },
       ),
     );
@@ -192,93 +101,84 @@ class _EcranCompteState extends State<EcranCompte> {
     ],
   );
 
-  Widget _mesCommandes(BuildContext context, Services services) {
-    return RefreshIndicator(
-      onRefresh: _charger,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+  Widget _espace(BuildContext context, Services services) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    services.session.nom ?? 'Mon compte',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (services.session.email != null)
                     Text(
-                      services.session.nom ?? 'Mon compte',
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                      services.session.email!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.texteAttenue,
                       ),
                     ),
-                    if (services.session.email != null)
-                      Text(
-                        services.session.email!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: context.texteAttenue,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
-              OutlinedButton(
-                onPressed: services.session.deconnecter,
-                child: const Text('Se déconnecter'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 22),
-          const Libelle('Mes commandes'),
-          const SizedBox(height: 10),
-          if (_chargement)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 28),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_erreur != null)
-            Alerte(message: _erreur!)
-          else if (_commandes.isEmpty)
-            Text(
-              'Vous n’avez pas encore commandé.',
-              style: TextStyle(fontSize: 13.5, color: context.texteAttenue),
-            )
-          else
-            for (final c in _commandes) _uneCommande(context, c),
-          const SizedBox(height: 12),
-          const Divider(),
-          _entree(
-            context,
-            icone: Icons.favorite_border,
-            titre: 'Ma liste',
-            ecran: () => const EcranFavoris(),
-          ),
-          _entree(
-            context,
-            icone: Icons.assignment_return_outlined,
-            titre: 'Réclamations et retours',
-            ecran: () => const EcranSav(),
-          ),
-          _entree(
-            context,
-            icone: Icons.forum_outlined,
-            titre: 'Mes discussions',
-            ecran: () => const EcranDiscussions(),
-          ),
-          _entree(
-            context,
-            icone: Icons.local_shipping_outlined,
-            titre: 'Suivre un colis',
-            ecran: () => const EcranSuivi(),
-          ),
-        ],
-      ),
+            ),
+            OutlinedButton(
+              onPressed: services.session.deconnecter,
+              child: const Text('Se déconnecter'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        const Divider(),
+        // ⚠️ « Mes commandes » est une PORTE, plus une liste : c'est la liste
+        //    elle-même qui saturait cet écran. Elle ouvre son propre écran,
+        //    comme « Ma liste » juste en dessous.
+        _entree(
+          context,
+          icone: Icons.receipt_long_outlined,
+          titre: 'Mes commandes',
+          ecran: () => const EcranMesCommandes(),
+        ),
+        _entree(
+          context,
+          icone: Icons.favorite_border,
+          titre: 'Ma liste',
+          ecran: () => const EcranFavoris(),
+        ),
+        // Aussi un onglet de la barre du bas. Le garder ici n'est pas un
+        // doublon inutile : c'est ici qu'on cherche « tout ce qui est à moi ».
+        _entree(
+          context,
+          icone: Icons.forum_outlined,
+          titre: 'Mes discussions',
+          ecran: () => const EcranDiscussions(),
+        ),
+        _entree(
+          context,
+          icone: Icons.assignment_return_outlined,
+          titre: 'Réclamations et retours',
+          ecran: () => const EcranSav(),
+        ),
+        _entree(
+          context,
+          icone: Icons.local_shipping_outlined,
+          titre: 'Suivre un colis',
+          ecran: () => const EcranSuivi(),
+        ),
+      ],
     );
   }
 
   /// Une entrée de l'espace personnel.
   ///
-  /// Écrite une fois : quatre ListTile recopiés divergeraient au premier
+  /// Écrite une fois : cinq ListTile recopiés divergeraient au premier
   /// ajustement — l'un garderait sa flèche, l'autre non.
   Widget _entree(
     BuildContext context, {
@@ -293,73 +193,4 @@ class _EcranCompteState extends State<EcranCompte> {
     onTap: () =>
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => ecran())),
   );
-
-  Widget _uneCommande(BuildContext context, _ResumeCommande c) {
-    final etat = statutsCommande[c.statut];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: context.bordure),
-        borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
-      ),
-      child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => EcranDetailCommande(commandeId: c.id),
-          ),
-        ),
-        borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(
-                      c.numero,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Etiquette(
-                    texte: etat?.texte ?? c.statut,
-                    couleur: etat?.couleur,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${c.nombreLignes} article(s) · ${montantLisible(c.montantTotal, c.devise)}',
-                style: TextStyle(fontSize: 12.5, color: context.texteAttenue),
-              ),
-              // ⚠️ Le CODE DE RETRAIT n'est pas dans cette liste, et ce n'est pas un
-              //    oubli : c'est un secret partagé, qui suffit à emporter la
-              //    marchandise. Ici, il apparaîtrait sur la capture d'écran qu'on
-              //    envoie à un proche pour lui montrer ses achats.
-              if (c.statut == 'DISPONIBLE') ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Votre marchandise vous attend. Ouvrez la commande pour voir '
-                  'votre code de retrait.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.4,
-                    color: Jetons.succes,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

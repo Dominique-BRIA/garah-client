@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'charte/jetons.dart';
-import 'modeles/catalogue.dart';
 import 'ecrans/accueil.dart';
 import 'ecrans/catalogue.dart';
 import 'ecrans/compte.dart';
 import 'ecrans/panier.dart';
+import 'ecrans/sav.dart';
 import 'services/services.dart';
 
 /// La coque : quatre destinations, une barre en bas.
@@ -23,8 +23,8 @@ import 'services/services.dart';
 /// sauter d'un bout à l'autre.
 ///
 /// ⚠️ `keepAlive` sur chaque page, sinon on perd tout ce que le `PageView`
-///    laisse sortir de l'écran. Revenir au catalogue après un détour par le
-///    panier rechargerait la liste et perdrait la position de défilement : on
+///    laisse sortir de l'écran. Revenir aux discussions après un détour par
+///    le panier rechargerait la liste et perdrait la position de défilement : on
 ///    se retrouve en haut d'une page qu'on avait parcourue, et sur une
 ///    connexion comptée, on repaie la requête.
 class Coque extends StatefulWidget {
@@ -40,7 +40,6 @@ class _CoqueState extends State<Coque> {
 
   @override
   void dispose() {
-    _categorieDemandee.dispose();
     _pages.dispose();
     super.dispose();
   }
@@ -62,26 +61,6 @@ class _CoqueState extends State<Coque> {
     }
   }
 
-  /// La catégorie demandée depuis l'accueil, s'il y en a une.
-  ///
-  /// ## 🎯 Cliquer sur « VÊTEMENTS » ne filtrait rien
-  ///
-  /// Toutes les puces de l'accueil appelaient le MÊME rappel, sans argument :
-  /// on basculait sur le catalogue, et la catégorie était perdue en chemin.
-  /// L'écran affichait donc tout, comme si de rien n'était.
-  ///
-  /// ## ⚠️ Un ValueNotifier, et pas un paramètre de constructeur
-  ///
-  /// Le catalogue est enveloppé dans un `_Vivante` qui le maintient en vie
-  /// d'un onglet à l'autre. Son état SURVIT au changement de page : lui passer
-  /// une nouvelle valeur en paramètre ne le reconstruirait pas, et le filtre
-  /// n'arriverait jamais.
-  ///
-  /// Un canal auquel il s'abonne règle le problème sans rien réveiller
-  /// d'autre. C'est aussi la règle du `pubspec` : l'état tient dans un
-  /// ValueNotifier, on n'installe pas une bibliothèque pour ça.
-  final _categorieDemandee = ValueNotifier<Categorie?>(null);
-
   @override
   Widget build(BuildContext context) {
     final services = Services.de(context);
@@ -93,13 +72,21 @@ class _CoqueState extends State<Coque> {
         children: [
           _Vivante(
             child: EcranAccueil(
+              // ⚠️ Le catalogue n'est plus un onglet, mais l'écran existe
+              //    toujours : la recherche et les puces de catégorie l'OUVRENT
+              //    par-dessus l'accueil, avec une flèche de retour. On revient
+              //    ainsi là d'où l'on venait, au lieu d'atterrir sur un onglet
+              //    qu'on n'avait pas choisi.
               surChercher: (categorie) {
-                _categorieDemandee.value = categorie;
-                _allerA(1);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => EcranCatalogue(categorie: categorie),
+                  ),
+                );
               },
             ),
           ),
-          _Vivante(child: EcranCatalogue(categorie: _categorieDemandee)),
+          const _Vivante(child: EcranDiscussions()),
           const _Vivante(child: EcranPanier()),
           const _Vivante(child: EcranCompte()),
         ],
@@ -118,13 +105,13 @@ class _CoqueState extends State<Coque> {
               selectedIcon: Icon(Icons.home),
               label: 'Accueil',
             ),
-            // ⚠️ « Catalogue », et non « Chercher » : c'est le mot du web, et
-            //    du bas de page, et du menu. Deux noms pour le même écran font
-            //    croire à deux écrans.
+            // ⚠️ « Discussions » et non « Mes discussions » : quatre cases sur
+            //    un écran de 360 points, et quinze caractères passeraient sur
+            //    deux lignes. Le web emploie le même mot dans sa barre du bas.
             const NavigationDestination(
-              icon: Icon(Icons.grid_view_outlined),
-              selectedIcon: Icon(Icons.grid_view),
-              label: 'Catalogue',
+              icon: Icon(Icons.forum_outlined),
+              selectedIcon: Icon(Icons.forum),
+              label: 'Discussions',
             ),
             NavigationDestination(
               icon: _pastille(

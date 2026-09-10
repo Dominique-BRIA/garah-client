@@ -5,6 +5,7 @@ import '../charte/jetons.dart';
 import '../charte/theme.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
+import 'connexion.dart';
 import 'discussion.dart';
 
 class _Dossier {
@@ -323,11 +324,14 @@ class _EcranDiscussionsState extends State<EcranDiscussions> {
   bool _chargement = true;
   String? _erreur;
 
-  @override
-  void initState() {
-    super.initState();
-    _charger();
-  }
+  /// Le compte dont on a déjà chargé les discussions.
+  ///
+  /// ⚠️ Cet écran est maintenant un ONGLET, monté dès l'ouverture de
+  ///    l'application — connecté ou non. Charger dans initState enverrait une
+  ///    requête sans session, et l'écran afficherait une erreur à quelqu'un
+  ///    qui n'a simplement pas encore de compte. On charge au moment où une
+  ///    session existe, et une seule fois par compte.
+  int? _chargePour;
 
   Future<void> _charger() async {
     setState(() {
@@ -375,41 +379,78 @@ class _EcranDiscussionsState extends State<EcranDiscussions> {
 
   @override
   Widget build(BuildContext context) {
+    final session = Services.de(context).session;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Mes discussions')),
-      body: _chargement
-          ? const Center(child: CircularProgressIndicator())
-          : _erreur != null
-          ? EtatVide(
-              message: _erreur!,
-              libelleAction: 'Réessayer',
-              surAction: _charger,
-            )
-          : _conversations.isEmpty
-          ? const EtatVide(
-              message: 'Vous n’avez aucune discussion en cours.',
+      body: ListenableBuilder(
+        listenable: session,
+        builder: (context, _) {
+          if (session.enCoursDeReprise) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!session.connecte) {
+            _chargePour = null;
+            // ⚠️ Un onglet ouvert à tous : sans session, on dit POURQUOI la
+            //    liste est vide et comment la remplir, plutôt qu'une erreur.
+            return EtatVide(
+              message: 'Connectez-vous pour retrouver vos discussions.',
               detail:
-                  'Le bouton « Contacter » d’une fiche produit en ouvre une.',
-            )
-          : RefreshIndicator(
-              onRefresh: _charger,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-                children: [
-                  for (final c in _conversations) _uneCarte(context, c),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Touchez une discussion pour la lire et répondre.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1.5,
-                      color: context.texteAttenue,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                  'Vos questions sur un article, et les réponses de nos '
+                  'conseillers, arrivent ici.',
+              libelleAction: 'Se connecter',
+              surAction: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const EcranConnexion())),
+            );
+          }
+
+          final id = session.utilisateurId;
+          if (_chargePour != id) {
+            _chargePour = id;
+            // Après le rendu : appeler setState pendant un build lèverait.
+            WidgetsBinding.instance.addPostFrameCallback((_) => _charger());
+          }
+
+          return _corps(context);
+        },
+      ),
     );
+  }
+
+  Widget _corps(BuildContext context) {
+    return _chargement
+        ? const Center(child: CircularProgressIndicator())
+        : _erreur != null
+        ? EtatVide(
+            message: _erreur!,
+            libelleAction: 'Réessayer',
+            surAction: _charger,
+          )
+        : _conversations.isEmpty
+        ? const EtatVide(
+            message: 'Vous n’avez aucune discussion en cours.',
+            detail: 'Le bouton « Contacter » d’une fiche produit en ouvre une.',
+          )
+        : RefreshIndicator(
+            onRefresh: _charger,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+              children: [
+                for (final c in _conversations) _uneCarte(context, c),
+                const SizedBox(height: 10),
+                Text(
+                  'Touchez une discussion pour la lire et répondre.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.5,
+                    color: context.texteAttenue,
+                  ),
+                ),
+              ],
+            ),
+          );
   }
 
   Widget _uneCarte(BuildContext context, Map<String, dynamic> c) {

@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { ServiceNotifications } from '../../services/notifications';
 import { ServiceSession } from '../../services/session';
-import { MenuCompte } from './menu-compte';
+import { RetourCompte } from './retour-compte';
 import { messageErreur } from '../../api/erreurs';
 
 interface MonProfil {
@@ -34,7 +34,7 @@ interface MonProfil {
  */
 @Component({
   selector: 'gb-profil',
-  imports: [FormsModule, RouterLink, MenuCompte],
+  imports: [FormsModule, RouterLink, RetourCompte],
   templateUrl: './profil.html',
   styleUrl: './profil.scss',
 })

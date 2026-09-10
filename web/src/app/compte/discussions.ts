@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { Page } from '../../modeles/catalogue';
-import { MenuCompte } from './menu-compte';
+import { RetourCompte } from './retour-compte';
 
 interface VueConversation {
   readonly id: number;
@@ -35,14 +35,15 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
  */
 @Component({
   selector: 'gb-discussions',
-  imports: [FormsModule, RouterLink, MenuCompte],
+  imports: [FormsModule, RouterLink, RetourCompte],
   template: `
+    <gb-retour-compte />
+
     <header class="entete">
       <h1>Mes discussions</h1>
       <p class="entete__aide">Questions, négociations, suivi d’un problème.</p>
     </header>
 
-    <gb-menu-compte />
 
     @if (ouverture()) {
       <section class="gb-carte formulaire">

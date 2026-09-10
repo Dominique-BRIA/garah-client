@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ResumeProduit, montantLisible } from '../../modeles/catalogue';
 import { ServiceFavoris } from '../../services/favoris';
 import { Coeur } from '../coeur';
-import { MenuCompte } from './menu-compte';
+import { RetourCompte } from './retour-compte';
 
 /**
  * Ma liste d'envies.
@@ -27,14 +27,15 @@ import { MenuCompte } from './menu-compte';
  */
 @Component({
   selector: 'gb-favoris',
-  imports: [RouterLink, Coeur, MenuCompte],
+  imports: [RouterLink, Coeur, RetourCompte],
   template: `
+    <gb-retour-compte />
+
     <header class="entete">
       <h1>Ma liste</h1>
       <p class="entete__aide">Les articles que vous avez mis de côté.</p>
     </header>
 
-    <gb-menu-compte />
 
     @if (chargement()) {
       <div class="gb-etat"><p>Chargement…</p></div>

@@ -28,10 +28,17 @@ import 'produit.dart';
 /// une fois sur deux — et surtout, chaque page rechargée est un aller-retour
 /// de plus sur une connexion qui les compte.
 class EcranCatalogue extends StatefulWidget {
-  const EcranCatalogue({super.key, required this.categorie});
+  const EcranCatalogue({super.key, this.categorie});
 
-  /// Le canal par lequel l accueil demande une categorie.
-  final ValueNotifier<Categorie?> categorie;
+  /// La catégorie demandée en ouvrant l'écran — une puce de l'accueil.
+  ///
+  /// Nulle quand on arrive par la barre de recherche : tout le catalogue.
+  ///
+  /// ⚠️ Un simple paramètre suffit désormais. Tant que le catalogue était un
+  ///    ONGLET maintenu en vie, un paramètre ne l'aurait jamais atteint, et il
+  ///    fallait un canal (ValueNotifier). Il s'ouvre maintenant par-dessus
+  ///    l'accueil, neuf à chaque fois : le canal n'a plus de raison d'être.
+  final Categorie? categorie;
 
   @override
   State<EcranCatalogue> createState() => _EcranCatalogueState();
@@ -67,40 +74,18 @@ class _EcranCatalogueState extends State<EcranCatalogue> {
   void initState() {
     super.initState();
     _defilement.addListener(_peutEtreLaSuite);
-    _categorie = widget.categorie.value;
-    widget.categorie.addListener(_surCategorieDemandee);
-    _charger(remiseAZero: true);
-  }
-
-  /// L'accueil demande une catégorie.
-  ///
-  /// ⚠️ Cet écran est maintenu en vie d'un onglet à l'autre : c'est le seul
-  ///    chemin par lequel un nouveau filtre peut l'atteindre. Un paramètre de
-  ///    constructeur ne le reconstruirait pas.
-  void _surCategorieDemandee() {
-    final demandee = widget.categorie.value;
-    if (demandee?.id == _categorie?.id) return;
-    setState(() {
-      _categorie = demandee;
-      // La recherche tapée n'a plus de sens sous une autre catégorie : on
-      // repart propre plutôt que de croiser deux filtres qu'on n'a pas
-      // choisis ensemble.
-      _filtre = '';
-      _saisie.clear();
-    });
+    _categorie = widget.categorie;
     _charger(remiseAZero: true);
   }
 
   /// Retire le filtre de catégorie.
   void _retirerLaCategorie() {
-    // On passe par le canal : sinon l'accueil croirait le filtre encore posé,
-    // et recliquer la même catégorie ne ferait rien.
-    widget.categorie.value = null;
+    setState(() => _categorie = null);
+    _charger(remiseAZero: true);
   }
 
   @override
   void dispose() {
-    widget.categorie.removeListener(_surCategorieDemandee);
     _attente?.cancel();
     _saisie.dispose();
     _defilement.dispose();
@@ -313,13 +298,8 @@ class _EcranCatalogueState extends State<EcranCatalogue> {
         surAction: () {
           _saisie.clear();
           _filtre = '';
-          // Passe par le canal : sinon l'accueil croirait le filtre encore
-          // posé, et recliquer la même catégorie ne ferait rien.
-          if (_categorie != null) {
-            widget.categorie.value = null;
-          } else {
-            _charger(remiseAZero: true);
-          }
+          setState(() => _categorie = null);
+          _charger(remiseAZero: true);
         },
       );
     }
