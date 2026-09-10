@@ -397,7 +397,15 @@ export class Discussion {
           // On ajoute localement plutôt que de tout recharger : le fil peut
           // être long, et le rappeler entier pour une ligne de plus coûte
           // cher sur une connexion mobile.
-          this.conversation.update((c) => (c ? { ...c, messages: [...c.messages, m] } : c));
+          //
+          // ⚠️ SAUF S'IL EST DÉJÀ LÀ. Le serveur pousse aussi le message à son
+          //    expéditeur, en direct — et cette poussée arrive souvent AVANT la
+          //    réponse à l'envoi. L'ajouter sans regarder l'affichait deux fois.
+          this.conversation.update((c) =>
+            c && !c.messages.some((x) => x.id === m.id)
+              ? { ...c, messages: [...c.messages, m] }
+              : c,
+          );
         },
         error: (e: unknown) => {
           this.envoi.set(false);

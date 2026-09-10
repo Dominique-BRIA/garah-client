@@ -186,11 +186,18 @@ class _EcranDiscussionState extends State<EcranDiscussion> {
       // ⚠️ On ajoute le message rendu par le SERVEUR, pas le texte saisi : lui
       //    seul porte l'identifiant de l'expéditeur et la date, et c'est ce
       //    qui le range du bon côté du fil au prochain rendu.
+      //
+      // ⚠️ SAUF S'IL EST DÉJÀ LÀ. Le serveur pousse aussi le message à son
+      //    expéditeur, en direct — et cette poussée arrive souvent AVANT la
+      //    réponse à l'envoi. L'ajouter sans regarder l'affichait deux fois.
+      final dejaLa = _messages.any((m) => m['id'] == message['id']);
       setState(() {
-        _fil = {
-          ...?_fil,
-          'messages': [..._messages, message],
-        };
+        if (!dejaLa) {
+          _fil = {
+            ...?_fil,
+            'messages': [..._messages, message],
+          };
+        }
         _envoi = false;
       });
       _reponse.clear();
@@ -270,9 +277,18 @@ class _EcranDiscussionState extends State<EcranDiscussion> {
     final auteur = (m['expediteurId'] as num?)?.toInt();
     final deMoi = moi != null && auteur == moi;
     final date = DateTime.tryParse((m['dateEnvoi'] as String?) ?? '');
+    // ⚠️ FOND ET TEXTE POSÉS ENSEMBLE, depuis la charte. Mes bulles étaient
+    //    sur le primaire (#6366F1) avec la date en gris atténué : illisible,
+    //    et même le blanc n'y tient que 4,47:1. L'indigo foncé de la charte
+    //    porte le blanc à 6,3:1 et la date, à 85 %, à près de 5:1 — dans les
+    //    deux thèmes, puisque la bulle ne change pas avec eux.
     final fond = deMoi
-        ? Theme.of(context).colorScheme.primaryContainer
+        ? Jetons.clairPrimaireTexte
         : Theme.of(context).colorScheme.surface;
+    final encre = deMoi ? Colors.white : null;
+    final encreDate = deMoi
+        ? Colors.white.withValues(alpha: 0.85)
+        : context.texteAttenue;
 
     return Align(
       alignment: deMoi ? Alignment.centerRight : Alignment.centerLeft,
@@ -314,13 +330,13 @@ class _EcranDiscussionState extends State<EcranDiscussion> {
             ],
             Text(
               (m['contenu'] as String?) ?? '',
-              style: const TextStyle(fontSize: 14, height: 1.45),
+              style: TextStyle(fontSize: 14, height: 1.45, color: encre),
             ),
             if (date != null) ...[
               const SizedBox(height: 6),
               Text(
                 _quand(date),
-                style: TextStyle(fontSize: 11, color: context.texteAttenue),
+                style: TextStyle(fontSize: 11, color: encreDate),
               ),
             ],
           ],
