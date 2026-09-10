@@ -148,9 +148,9 @@ class _EcranPaiementState extends State<EcranPaiement> {
       });
 
       if (maj.confirme) {
-        // Confirmé pour de bon, par le SERVEUR — jamais deviné ici. Le panier
-        // serveur est vidé par la commande ; le panier local, lui, l'a déjà
-        // été à la fusion.
+        // Confirmé pour de bon, par le SERVEUR — jamais deviné ici. Les deux
+        // paniers sont déjà vides : celui du serveur, consommé par la commande ;
+        // le local, vidé au moment où la commande est partie.
         messager.showSnackBar(
           const SnackBar(content: Text('Paiement confirmé. Merci !')),
         );
