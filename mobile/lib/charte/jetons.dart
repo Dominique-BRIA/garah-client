@@ -36,6 +36,7 @@ abstract final class Jetons {
   static const clairChampBordure = Color(0x2E000000);
   static const clairAccentTitre = Color(0xFF2E0F52);
   static const clairSlogan = Color(0xFF047857);
+  static const clairPrimaireTexte = Color(0xFF4F46E5);
 
   // --- Thème sombre ---
   static const sombreFond = Color(0xFF0C0C14);
@@ -52,6 +53,7 @@ abstract final class Jetons {
   static const sombreChampBordure = Color(0x2EFFFFFF);
   static const sombreAccentTitre = Color(0xFFAA3BFF);
   static const sombreSlogan = Color(0xFF10B981);
+  static const sombrePrimaireTexte = Color(0xFF818CF8);
 
   // --- Rayons ---
   static const rayonPetit = 8.0;

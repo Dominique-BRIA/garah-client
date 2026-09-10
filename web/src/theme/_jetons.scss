@@ -46,6 +46,7 @@
   --champ-bordure: rgba(0, 0, 0, 0.18);
   --accent-titre: #2E0F52;
   --slogan: #047857;
+  --primaire-texte: #4F46E5;
 }
 
 @mixin jetons-sombres {
@@ -63,6 +64,7 @@
   --champ-bordure: rgba(255, 255, 255, 0.18);
   --accent-titre: #AA3BFF;
   --slogan: #10B981;
+  --primaire-texte: #818CF8;
 }
 
 // ⚠️ La garde `:not([data-theme="light"])` est indispensable : sans elle,

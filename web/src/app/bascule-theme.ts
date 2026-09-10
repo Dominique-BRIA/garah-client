@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, inject, input } from '@angular/core';
 
 import { ServiceTheme } from '../services/theme';
 
@@ -25,14 +25,23 @@ import { ServiceTheme } from '../services/theme';
   selector: 'gb-bascule-theme',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <button type="button" class="reglage" (click)="theme.basculer()">
+    <!-- ⚠️ En mode compact, le libellé visible raccourcit, mais le nom
+         annoncé au lecteur d'écran reste complet : c'est lui qui dit ce que
+         fait le bouton. -->
+    <button type="button" class="reglage" [class.reglage--compacte]="compacte()"
+            [attr.aria-label]="theme.sombre() ? 'Thème clair' : 'Thème sombre'"
+            (click)="theme.basculer()">
       <!-- L'attribut fill="currentColor" fait prendre à l'icône la couleur du
            texte : elle suit donc le thème sans une seule règle de plus. -->
       <svg [attr.viewBox]="theme.sombre() ? SOLEIL.boite : LUNE.boite"
            fill="currentColor" aria-hidden="true" focusable="false">
         <path [attr.d]="theme.sombre() ? SOLEIL.trace : LUNE.trace" />
       </svg>
-      @if (theme.sombre()) { Thème clair } @else { Thème sombre }
+      @if (compacte()) {
+        @if (theme.sombre()) { Clair } @else { Sombre }
+      } @else {
+        @if (theme.sombre()) { Thème clair } @else { Thème sombre }
+      }
     </button>
   `,
   styles: [
@@ -63,6 +72,15 @@ import { ServiceTheme } from '../services/theme';
 
       .reglage:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
 
+      /* Le mode compact : pour l'en-tête large, où la bascule partage la
+         rangée avec le panier, la connexion et l'application. Elle y reste un
+         réglage — elle ne doit pas peser autant qu'une destination. */
+      .reglage--compacte {
+        gap: 0.4rem;
+        padding: 0.42rem 0.62rem;
+        font-size: 0.74rem;
+      }
+
       /* ⚠️ Sur un écran tactile, le survol reste collé après le toucher : le
          bouton garderait son état survolé jusqu'au prochain appui ailleurs. */
       @media (hover: hover) {
@@ -76,6 +94,9 @@ import { ServiceTheme } from '../services/theme';
 })
 export class BasculeTheme {
   protected readonly theme = inject(ServiceTheme);
+
+  /** Plus petite, libellé raccourci. Pour l'en-tête large. booleanAttribute : posé nu dans le gabarit, l'attribut arrive en chaîne vide, que TypeScript refuse pour un booléen. */
+  readonly compacte = input(false, { transform: booleanAttribute });
 
   // Tracés extraits de Font Awesome Free 7.3.1 — https://fontawesome.com
   // Licence CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/

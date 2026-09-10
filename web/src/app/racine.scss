@@ -285,6 +285,51 @@
     padding: 0 0.9rem;
     min-height: 40px;
   }
+
+  // L'application, tout au bout. Teintée d'indigo et non pleine : elle doit
+  // se voir sans rivaliser avec « Se connecter », qui reste l'action qu'on veut
+  // voir en premier. Et pas en bleu : le bleu est au panier, et à lui seul.
+  .entete__application {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 40px;
+    padding: 0 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--primaire) 32%, transparent);
+    border-radius: var(--rayon-moyen);
+    background: color-mix(in srgb, var(--primaire) 9%, transparent);
+    // ⚠️ --primaire-texte et NON --primaire. L indigo de la charte tombe sous
+    //    4,5:1 sur ce fond teinte, dans les deux themes — mesure, pas estime.
+    //    Ce jeton porte deux valeurs : indigo fonce en clair, indigo clair en
+    //    sombre.
+    color: var(--primaire-texte);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s ease, border-color 0.2s ease;
+
+    svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    &:hover {
+      background: color-mix(in srgb, var(--primaire) 16%, transparent);
+      border-color: color-mix(in srgb, var(--primaire) 50%, transparent);
+    }
+    &:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+  }
+
+  .entete__application--actif {
+    background: color-mix(in srgb, var(--primaire) 18%, transparent);
+  }
+}
+
+// ⚠️ Entre 900 et 1 200 px, la rangée déborde : la recherche, le panier, deux
+//    boutons de connexion, la bascule et l'application ne tiennent pas avec
+//    leurs libellés. L'application garde alors son icône seule — son nom
+//    reste annoncé au lecteur d'écran et affiché au survol.
+@media (min-width: 900px) and (max-width: 1199px) {
+  .entete__application { padding: 0; min-width: 40px; justify-content: center; }
+  .entete__application-texte { display: none; }
 }
 
 // =============================================================================
