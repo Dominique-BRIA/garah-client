@@ -1,13 +1,25 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { montantLisible } from '../../modeles/catalogue';
 import { ServiceSession } from '../../services/session';
+import { ServiceTempsReel } from '../../services/temps-reel';
+
+/**
+ * La file personnelle des messages de conversation.
+ *
+ * ⚠️ Le prefixe /utilisateur est resolu par le serveur vers la session de
+ *    l abonne. Une destination partagee livrerait les discussions d un
+ *    client a tous les autres connectes.
+ */
+const DESTINATION_CONVERSATIONS = '/utilisateur/file/conversations';
 
 interface VueMessage {
   readonly id: number;
+  /** Present sur le message pousse en temps reel comme sur celui du fil. */
+  readonly conversationId: number;
   readonly expediteurId: number;
   readonly contenu: string;
   readonly dateEnvoi: string;
@@ -252,6 +264,8 @@ const ETATS: Record<string, { texte: string; classe: string }> = {
 export class Discussion {
   private readonly http = inject(HttpClient);
   private readonly session = inject(ServiceSession);
+  private readonly tempsReel = inject(ServiceTempsReel);
+  private readonly destruction = inject(DestroyRef);
 
   /** Lié depuis la route par `withComponentInputBinding()`. */
   readonly id = input.required<string>();
@@ -274,6 +288,43 @@ export class Discussion {
 
   constructor() {
     queueMicrotask(() => this.charger());
+
+    // ⚠️ On COUPE a la destruction : sinon chaque discussion ouverte
+    //    laisserait un abonnement de plus derriere elle.
+    this.destruction.onDestroy(
+      this.tempsReel.abonner<VueMessage>(
+        DESTINATION_CONVERSATIONS,
+        (m) => this.surMessageRecu(m),
+      ),
+    );
+  }
+
+
+  /**
+   * L'arrivee d'un message, en direct.
+   *
+   * <h2>🎯 Il fallait recharger pour voir la reponse du conseiller</h2>
+   *
+   * <p>Le client posait sa question et attendait devant un ecran fige. Rien ne
+   * disait si quelqu'un avait repondu — il fallait recharger pour savoir, et
+   * donc recharger sans cesse.</p>
+   *
+   * <p>⚠️ LE MESSAGE EST AJOUTE, LE FIL N'EST PAS RELU. Redemander le fil a
+   * chaque phrase ferait une requete par message — exactement ce que le temps
+   * reel evite. Sur un forfait compte, la difference se voit.</p>
+   *
+   * <p>⚠️ On se protege du DOUBLON : le serveur pousse aux deux bouts, y
+   * compris a l'expediteur. L'identifiant tranche.</p>
+   */
+  private surMessageRecu(message: VueMessage): void {
+    const c = this.conversation();
+    if (!c || message.conversationId !== c.id) {
+      return;
+    }
+    if (c.messages.some((m) => m.id === message.id)) {
+      return;
+    }
+    this.conversation.set({ ...c, messages: [...c.messages, message] });
   }
 
   protected charger(): void {

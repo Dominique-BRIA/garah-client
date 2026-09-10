@@ -84,6 +84,12 @@ class ClientApi {
   /// Appelé quand la session est définitivement perdue.
   void Function()? surSessionPerdue;
 
+  /// Le jeton d acces courant.
+  ///
+  /// Expose pour le temps reel : le client STOMP le pose dans la trame
+  /// CONNECT, hors de toute requete HTTP.
+  String? get jetonAcces => _jeton;
+
   void poserJeton(String? jeton, {String? rafraichissement}) {
     _jeton = jeton;
     if (rafraichissement != null) {

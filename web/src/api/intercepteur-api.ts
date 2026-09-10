@@ -88,7 +88,13 @@ export function poserJeton(jeton: string | null): void {
   jetonEnMemoire = jeton;
 }
 
-function jetonCourant(): string | null {
+/**
+ * Le jeton courant.
+ *
+ * <p>Exporte pour le temps reel : le client STOMP le pose dans la trame
+ * CONNECT, hors de tout intercepteur HTTP.</p>
+ */
+export function jetonCourant(): string | null {
   return jetonEnMemoire;
 }
 

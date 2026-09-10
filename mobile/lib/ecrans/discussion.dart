@@ -25,6 +25,13 @@ import '../widgets/communs.dart';
 /// serveur pour le cas rare, traitée depuis le back-office — les faire
 /// apparaître chez le client réinstallerait le marchandage qu'on vient d'en
 /// retirer.
+/// La file personnelle des messages de conversation.
+///
+/// ⚠️ Le prefixe /utilisateur est resolu par le serveur vers la session de
+///    l abonne. Une destination partagee livrerait les discussions d un
+///    client a tous les autres connectes.
+const String _destinationConversations = '/utilisateur/file/conversations';
+
 class EcranDiscussion extends StatefulWidget {
   const EcranDiscussion({super.key, required this.id, this.sujet});
 
@@ -49,6 +56,9 @@ class _EcranDiscussionState extends State<EcranDiscussion> {
   bool _envoi = false;
   String? _erreur;
 
+  /// Coupe l ecoute temps reel. Nul tant que l ecran ne s est pas monte.
+  void Function()? _couperEcoute;
+
   @override
   void initState() {
     super.initState();
@@ -56,7 +66,21 @@ class _EcranDiscussionState extends State<EcranDiscussion> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ⚠️ ICI et non dans initState : Services.de() lit un InheritedWidget,
+    //    ce qui est interdit avant que les dependances ne soient posees.
+    _couperEcoute ??= Services.de(
+      context,
+    ).tempsReel.abonner(_destinationConversations, _surMessageRecu);
+  }
+
+  @override
   void dispose() {
+    // ⚠️ On COUPE. Sans cela, chaque discussion ouverte laisserait un
+    //    abonnement de plus derriere elle — et un telephone qui garde une
+    //    prise ouverte pour rien reveille sa radio et vide sa batterie.
+    _couperEcoute?.call();
     _reponse.dispose();
     _defilement.dispose();
     super.dispose();
@@ -68,6 +92,45 @@ class _EcranDiscussionState extends State<EcranDiscussion> {
           .toList();
 
   bool get _close => (_fil?['statut'] as String?) == 'CLOSED';
+
+  /// L'arrivée d'un message, en direct.
+  ///
+  /// ## 🎯 Il fallait tirer sur l'écran pour voir la réponse
+  ///
+  /// Le client posait sa question et attendait devant un écran figé. Rien ne
+  /// disait si quelqu'un avait répondu — il fallait recharger pour savoir, et
+  /// donc recharger sans cesse.
+  ///
+  /// ## ⚠️ LE MESSAGE EST AJOUTÉ, LE FIL N'EST PAS RELU
+  ///
+  /// Redemander le fil entier à chaque phrase ferait une requête par message —
+  /// exactement ce que le temps réel évite. Sur un forfait compté, la
+  /// différence se voit sur la facture.
+  ///
+  /// ## ⚠️ On se protège du doublon
+  ///
+  /// Le serveur pousse aux deux bouts, y compris à l'expéditeur : la même
+  /// discussion peut être ouverte ici et sur le navigateur. L'identifiant
+  /// tranche.
+  void _surMessageRecu(Map<String, dynamic> message) {
+    if (!mounted || _fil == null) {
+      return;
+    }
+    if (message['conversationId'] != widget.id) {
+      return;
+    }
+    if (_messages.any((m) => m['id'] == message['id'])) {
+      return;
+    }
+
+    setState(() {
+      _fil = {
+        ..._fil!,
+        'messages': [..._messages, message],
+      };
+    });
+    _versLeBas();
+  }
 
   Future<void> _charger() async {
     setState(() {

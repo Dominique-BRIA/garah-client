@@ -8,6 +8,7 @@ import 'services/notifications.dart';
 import 'services/panier_local.dart';
 import 'services/services.dart';
 import 'services/session.dart';
+import 'services/temps_reel.dart';
 import 'services/theme.dart';
 
 void main() {
@@ -37,6 +38,7 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
   late final ServiceSession _session;
   late final ServiceTheme _theme;
   late final ServiceNotifications _notifications;
+  late final ServiceTempsReel _tempsReel;
 
   @override
   void initState() {
@@ -46,6 +48,7 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
     _session = ServiceSession(_api, _panier);
     _theme = ServiceTheme();
     _notifications = ServiceNotifications(_api, _session);
+    _tempsReel = ServiceTempsReel(_api);
 
     // Trois lectures locales, aucune bloquante : l'application s'ouvre tout de
     // suite — en clair et déconnectée — puis se corrige. Attendre le réseau
@@ -66,6 +69,7 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
   @override
   void dispose() {
     _notifications.arreter();
+    _tempsReel.arreter();
     _session.dispose();
     _panier.dispose();
     _theme.dispose();
@@ -79,6 +83,7 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
       session: _session,
       panier: _panier,
       theme: _theme,
+      tempsReel: _tempsReel,
       child: ListenableBuilder(
         listenable: _theme,
         builder: (context, _) => MaterialApp(
