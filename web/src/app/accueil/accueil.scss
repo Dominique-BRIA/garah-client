@@ -282,6 +282,13 @@
   .corridor,
   .suivi { margin-left: 0; margin-right: 0; }
 
+  // ⚠️ L en-tete du dessus DISPARAIT ici (voir juste au-dessus), et avec lui
+  //    son padding : la bande se retrouvait collee a la barre du site, sans
+  //    rien pour la detacher. La marge est posee dans CETTE media-requete et
+  //    non sur .corridor, pour ne pas ajouter un vide inutile au telephone,
+  //    ou l en-tete espace deja.
+  .corridor { margin-top: 1.75rem; }
+
   .bloc { padding-left: 0; padding-right: 0; }
 
   .bloc__titre { font-size: 1.35rem; }
