@@ -56,7 +56,25 @@ export class Suivi {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  readonly numero = input<string>('');
+  /*
+   * ⚠️ Le type ment, et c'est la ROUTE qui ment.
+   *
+   * Deux routes menent ici : '/suivi' seule, et '/suivi/:numero'. Sur la
+   * premiere, le liage d'entrees du routeur pose `undefined` — la valeur par
+   * defaut '' ne le rattrape PAS. Le `string` annonce ci-dessous est une
+   * promesse faite au compilateur, que rien ne verifie a l'execution.
+   *
+   * Appeler `.trim()` dessus levait alors une TypeError dans l'effet de
+   * construction, et Angular vidait le gabarit ENTIER : le client cliquait
+   * sur « Suivre un colis » et arrivait sur une page BLANCHE. Meme defaut,
+   * meme symptome et meme cause que sur l'ecran de verification d'adresse.
+   */
+  readonly numero = input<string | undefined>('');
+
+  /** Le numero reellement recu, jamais `undefined`. */
+  private valeurDuNumero(): string {
+    return (this.numero() ?? '').trim();
+  }
 
   protected readonly saisie = signal('');
   protected readonly trajet = signal<Trajet | null>(null);
@@ -77,7 +95,7 @@ export class Suivi {
     // le client voit un champ vide alors qu'il a cliqué sur un lien qui
     // contenait déjà sa réponse.
     effect(() => {
-      const n = this.numero().trim();
+      const n = this.valeurDuNumero();
       if (n) {
         this.saisie.set(n);
         this.chercher(n);

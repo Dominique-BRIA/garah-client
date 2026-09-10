@@ -8,6 +8,7 @@ import '../services/services.dart';
 import '../widgets/communs.dart';
 import 'commande.dart' show PointRecuperation;
 import 'paiement.dart';
+import 'suivi.dart';
 
 class _LigneCommande {
   const _LigneCommande({
@@ -83,20 +84,38 @@ class _Commande {
 class _MonRetrait {
   const _MonRetrait({
     required this.numeroExpedition,
+    required this.numerosSuivi,
     required this.codeRetrait,
     required this.statut,
     required this.dateRetrait,
   });
 
   final String numeroExpedition;
+
+  /// Les numeros de suivi des colis de cet envoi.
+  ///
+  /// C'est le numero que le guichet public « Suivre un colis » sait lire. Il
+  /// n'etait donne NULLE PART au client : la boutique proposait un suivi que
+  /// ses propres clients ne pouvaient pas utiliser pour leur commande.
+  ///
+  /// Un envoi peut porter plusieurs colis — d'ou une liste.
+  final List<String> numerosSuivi;
+
   final String? codeRetrait;
-  final String statut;
+
+  /// Nul tant qu'AUCUN retrait n'est prepare — l'envoi est alors en route.
+  /// A distinguer de 'EN_ATTENTE', qui veut dire « arrive, a retirer ».
+  final String? statut;
+
   final DateTime? dateRetrait;
 
   factory _MonRetrait.de(Map<String, dynamic> j) => _MonRetrait(
     numeroExpedition: (j['numeroExpedition'] as String?) ?? '',
+    numerosSuivi: ((j['numerosSuivi'] as List<dynamic>?) ?? const [])
+        .whereType<String>()
+        .toList(),
     codeRetrait: j['codeRetrait'] as String?,
-    statut: (j['statut'] as String?) ?? '',
+    statut: j['statut'] as String?,
     dateRetrait: DateTime.tryParse((j['dateRetrait'] as String?) ?? ''),
   );
 
@@ -284,6 +303,13 @@ class _EcranDetailCommandeState extends State<EcranDetailCommande> {
             // arrivée. Le mettre après la liste des articles obligerait à faire
             // défiler devant l'agent du comptoir.
             for (final r in _retraits) ...[
+              // ============================================================
+              // LE SUIVI — des le depart, pas a l'arrivee
+              // ============================================================
+              // « Ou est mon colis » se demande PENDANT le trajet. Ce bloc ne
+              // depend donc ni du code de retrait ni du statut du retrait :
+              // il s'affiche des qu'un colis existe.
+              if (r.numerosSuivi.isNotEmpty) _leSuivi(context, r),
               if (r.codeRetrait != null)
                 _leCode(context, r)
               else if (r.remis)
@@ -344,6 +370,56 @@ class _EcranDetailCommandeState extends State<EcranDetailCommande> {
       ),
     );
   }
+
+  Widget _leSuivi(BuildContext context, _MonRetrait r) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 18),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surface,
+      border: Border.all(color: context.bordure),
+      borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Libelle(
+          r.numerosSuivi.length > 1 ? 'Suivi des colis' : 'Suivi du colis',
+        ),
+        for (final n in r.numerosSuivi)
+          // On OUVRE le suivi, on ne se contente pas d'afficher le numero :
+          // le recopier a la main dans le champ de l'autre ecran est la
+          // premiere occasion de se tromper d'un caractere.
+          InkWell(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => EcranSuivi(numero: n)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                n,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  color: Jetons.primaire,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+        Text(
+          'Ce numero ouvre le trajet detaille. Il peut se transmettre : '
+          'le consulter ne demande pas de compte.',
+          style: TextStyle(
+            fontSize: 12,
+            height: 1.5,
+            color: context.texteAttenue,
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _leCode(BuildContext context, _MonRetrait r) => Container(
     width: double.infinity,

@@ -66,7 +66,15 @@ const _libellesEtape = <String, String>{
 /// Cet écran est ouvert à qui connaît le numéro. Y mettre le code, qui suffit
 /// à emporter la marchandise, reviendrait à donner la clé avec l'adresse.
 class EcranSuivi extends StatefulWidget {
-  const EcranSuivi({super.key});
+  const EcranSuivi({super.key, this.numero});
+
+  /// Le numero a chercher d'emblee.
+  ///
+  /// Nul quand on arrive par le menu : l'ecran affiche alors son champ vide.
+  /// Renseigne quand on arrive depuis SA commande — reclaquer un numero
+  /// qu'on vient de lire a l'ecran est un pur travail de recopie, et la
+  /// premiere occasion de se tromper d'un caractere.
+  final String? numero;
 
   @override
   State<EcranSuivi> createState() => _EcranSuiviState();
@@ -80,6 +88,18 @@ class _EcranSuiviState extends State<EcranSuivi> {
   String? _statut;
   String? _numeroTrouve;
   List<_Etape> _etapes = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    final donne = widget.numero?.trim() ?? '';
+    if (donne.isNotEmpty) {
+      _numero.text = donne;
+      // Apres la premiere frame : `_chercher` appelle `setState`, et le
+      // contexte n'est pas encore monte ici.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _chercher());
+    }
+  }
 
   @override
   void dispose() {

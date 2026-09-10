@@ -40,11 +40,29 @@ interface PointRecuperation {
   readonly horaires: string | null;
 }
 
-/** Ce que le serveur rend de MON retrait. Le code y est nul deux fois. */
+/**
+ * Ce que le serveur rend de MON envoi.
+ *
+ * Le code y est nul trois fois : tant que rien n'est arrive, une fois la
+ * marchandise remise, et tant qu'aucun retrait n'est prepare - c'est alors
+ * `statut` qui vaut null, et non 'EN_ATTENTE'.
+ */
 interface MonRetrait {
   readonly numeroExpedition: string;
+
+  /*
+   * Les numeros de suivi des colis de cet envoi.
+   *
+   * C'est le numero que le guichet public /suivi sait lire. Il n'etait donne
+   * NULLE PART au client : la boutique proposait un suivi que ses propres
+   * clients ne pouvaient pas utiliser pour leur commande.
+   *
+   * Un envoi peut porter plusieurs colis - d'ou une liste.
+   */
+  readonly numerosSuivi: readonly string[];
+
   readonly codeRetrait: string | null;
-  readonly statut: string;
+  readonly statut: string | null;
   readonly dateRetrait: string | null;
 }
 
@@ -129,6 +147,27 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
           <p class="remis">
             Marchandise remise@if (r.dateRetrait) { le {{ date(r.dateRetrait) }} }.
           </p>
+        }
+
+        <!-- ============================================================== -->
+        <!-- LE SUIVI — des le depart, pas a l'arrivee                       -->
+        <!-- ============================================================== -->
+        <!-- « Ou est mon colis » se demande PENDANT le trajet. Ce bloc ne
+             depend donc ni du code de retrait ni du statut du retrait : il
+             s'affiche des qu'un colis existe. -->
+        @if (r.numerosSuivi.length) {
+          <section class="gb-carte suivi">
+            <p class="gb-libelle">
+              @if (r.numerosSuivi.length > 1) { Suivi des colis } @else { Suivi du colis }
+            </p>
+            @for (n of r.numerosSuivi; track n) {
+              <a class="suivi__numero gb-mono" [routerLink]="['/suivi', n]">{{ n }}</a>
+            }
+            <p class="suivi__aide">
+              Ce numero ouvre le trajet detaille. Il peut se transmettre :
+              le consulter ne demande pas de compte.
+            </p>
+          </section>
         }
       }
 
@@ -261,6 +300,29 @@ const LIBELLES: Record<string, { texte: string; classe: string }> = {
     .code__envoi {
       margin: 0.5rem 0 0;
       font-size: 0.72rem;
+      color: var(--texte-attenue);
+    }
+
+    .suivi { margin: 1rem 1.25rem 0; padding: 1rem 1.25rem; }
+
+    .suivi__numero {
+      display: block;
+      margin-top: 0.5rem;
+      /* Assez grand pour se recopier a la main sur un carnet ou se dicter au
+         telephone : c'est le geste reel autour de ce numero. */
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--primaire);
+      text-decoration: none;
+    }
+
+    .suivi__numero:hover { text-decoration: underline; }
+
+    .suivi__aide {
+      margin: 0.75rem 0 0;
+      font-size: 0.78rem;
+      line-height: 1.5;
       color: var(--texte-attenue);
     }
 
