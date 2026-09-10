@@ -13,6 +13,7 @@ class _EtatPaiement {
     required this.statut,
     required this.montant,
     required this.referenceTransaction,
+    this.codeUssd,
   });
 
   final int id;
@@ -20,11 +21,18 @@ class _EtatPaiement {
   final num montant;
   final String? referenceTransaction;
 
+  /// Le code à composer si la demande n'arrive pas d'elle-même.
+  ///
+  /// ⚠️ Nul en dehors de la demande initiale : il n'est valable qu'à cet
+  ///    instant. L'afficher plus tard ferait composer un code périmé.
+  final String? codeUssd;
+
   factory _EtatPaiement.de(Map<String, dynamic> j) => _EtatPaiement(
     id: (j['id'] as num).toInt(),
     statut: (j['statut'] as String?) ?? '',
     montant: (j['montant'] as num?) ?? 0,
     referenceTransaction: j['referenceTransaction'] as String?,
+    codeUssd: j['codeUssd'] as String?,
   );
 
   bool get confirme => statut == 'CONFIRME';
@@ -416,6 +424,22 @@ class _EcranPaiementState extends State<EcranPaiement> {
             'Validez la demande sur votre téléphone, puis revenez ici. '
             'Le montant est de ${montantLisible(p.montant)}.',
       ),
+      // 🎯 LE RECOURS QUAND LA DEMANDE N'ARRIVE PAS.
+      //
+      //    L'opérateur pousse une demande de validation sur le téléphone.
+      //    Elle arrive presque toujours — mais quand elle se perd, le client
+      //    reste devant un écran qui dit « validez sur votre téléphone »,
+      //    sans rien à valider.
+      //
+      //    Le code voyageait déjà dans la réponse et n'était affiché nulle
+      //    part.
+      if (p.codeUssd != null && p.codeUssd!.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Text(
+          'Rien reçu ? Composez undefined sur ce téléphone.',
+          style: TextStyle(fontSize: 13, color: context.texteAttenue),
+        ),
+      ],
       if (p.referenceTransaction != null) ...[
         const SizedBox(height: 12),
         Text(
