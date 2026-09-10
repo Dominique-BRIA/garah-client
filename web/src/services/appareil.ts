@@ -12,6 +12,18 @@ export interface VersionApk {
   /** Ce qu'on écrit à l'écran. Jamais l'ABI brute : elle ne dit rien. */
   readonly libelle: string;
   readonly detail: string;
+  /**
+   * Le poids du fichier, en mégaoctets.
+   *
+   * ⚠️ NE PAS LE CORRIGER À LA MAIN. Il est relevé sur les fichiers réels par
+   *    `node outils/poids-apk.mjs`, à lancer chaque fois qu'on remplace les
+   *    APK. Le script échoue bruyamment si un fichier manque, plutôt que de
+   *    laisser un poids périmé.
+   *
+   *    Écrit à la main, il restait à l'ancienne valeur après une mise à jour :
+   *    le téléchargement marchait, il coûtait simplement autre chose que ce
+   *    qui était promis — et personne ne s'en apercevait.
+   */
   readonly poidsMo: number;
 }
 
