@@ -89,7 +89,10 @@ export class ServiceSession {
         tap((r) => this.ouvrir(r)),
         // La fusion suit la connexion, jamais l'inverse : elle a besoin du
         // jeton que `ouvrir` vient de poser.
-        tap(() => this.fusionnerLePanier()),
+        // ⚠️ Son échec ne doit PAS faire échouer la connexion : on vient de
+        //    saisir un mot de passe. Le panier repartira au moment de
+        //    commander, où la synchronisation est refaite.
+        tap(() => this.synchroniserLePanier().subscribe({ error: () => {} })),
         map(() => true),
         catchError(() => of(false)),
       );
@@ -136,25 +139,46 @@ export class ServiceSession {
   }
 
   /**
-   * Reprend le panier constitué avant la connexion.
+   * Pousse le panier du navigateur vers le serveur.
+   *
+   * <h2>🎯 « Votre panier est vide » sur un panier qui ne l'était pas</h2>
+   *
+   * <p>L'écran de commande lit {@code /api/panier} — le panier du SERVEUR,
+   * seul juge du stock et du prix. Le panier local, lui, ne partait qu'à la
+   * CONNEXION.</p>
+   *
+   * <p>⚠️ Quelqu'un DÉJÀ CONNECTÉ qui ajoutait un article ne l'envoyait donc
+   * nulle part : le panier affichait ses lignes et son montant, et l'écran
+   * suivant annonçait un panier vide. Les deux disaient vrai — ils ne
+   * regardaient pas le même panier. C'est le cas le plus courant, et le seul
+   * qui n'avait jamais été parcouru : on teste en se connectant AVANT
+   * d'ajouter, et tout marche.</p>
+   *
+   * <h2>⚠️ NON DESTRUCTIF, contrairement à ce qui se faisait</h2>
+   *
+   * <p>La fusion vidait le panier local dès qu'elle réussissait. Or c'est le
+   * panier local que l'écran du panier AFFICHE : une fois connecté, il
+   * paraissait donc vide alors que le serveur tenait tout.</p>
+   *
+   * <p>Le local reste ce qu'on montre, le serveur ce qui fait foi au moment de
+   * payer. Le local est vidé quand la commande est RÉELLEMENT passée.</p>
+   *
+   * <h2>⚠️ La rejouer est sans danger</h2>
+   *
+   * <p>{@code /api/panier/fusion} garde le PLUS GRAND des deux côtés, jamais
+   * la somme. La rejouer donne le même panier — c'est ce qui permet de
+   * l'appeler à chaque passage en commande sans multiplier les quantités.</p>
    *
    * <p>Les écarts sont ignorés ici : c'est l'écran du panier qui les annonce,
    * en relisant le panier serveur. Les traiter au vol, pendant une
    * redirection, les ferait disparaître avant d'être lus.</p>
    */
-  private fusionnerLePanier(): void {
+  synchroniserLePanier(): Observable<unknown> {
     const lignes = this.panierLocal.pourFusion();
     if (lignes.length === 0) {
-      return;
+      return of(null);
     }
-
-    this.http.post('/api/panier/fusion', { lignes }).subscribe({
-      next: () => this.panierLocal.vider(),
-      error: () => {
-        // Le panier local RESTE : la fusion se retentera à la prochaine
-        // connexion. L'effacer sur un échec réseau perdrait le panier.
-      },
-    });
+    return this.http.post('/api/panier/fusion', { lignes });
   }
 
   private ouvrir(r: ResultatConnexion): void {

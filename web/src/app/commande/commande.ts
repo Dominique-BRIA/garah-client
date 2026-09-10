@@ -1,9 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { catchError, of } from 'rxjs';
 
 import { montantLisible } from '../../modeles/catalogue';
 import { messageErreur } from '../../api/erreurs';
+import { PanierLocal } from '../../services/panier-local';
+import { ServiceSession } from '../../services/session';
 
 /** Un point de récupération, tel que la route publique le rend. */
 interface PointRecuperation {
@@ -211,6 +214,8 @@ interface ContenuPanier {
 export class Commande {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly session = inject(ServiceSession);
+  private readonly panierLocal = inject(PanierLocal);
 
   protected readonly points = signal<readonly PointRecuperation[]>([]);
   protected readonly panier = signal<ContenuPanier | null>(null);
@@ -232,6 +237,26 @@ export class Commande {
     this.charger();
   }
 
+  /**
+   * Les points de récupération et le panier.
+   *
+   * <p>⚠️ LE PANIER LOCAL EST POUSSÉ AU SERVEUR AVANT D'ÊTRE RELU. L'écran lit
+   * {@code /api/panier} — le panier du serveur — alors que l'écran précédent
+   * affiche celui du navigateur. Sans cette synchronisation, tout ce qu'un
+   * client déjà connecté a ajouté restait dans son navigateur, et cet écran
+   * annonçait « Votre panier est vide » sur un panier qui affichait ses lignes
+   * et son montant.</p>
+   *
+   * <p>La synchronisation est faite ICI et non sur le bouton de l'écran
+   * précédent : on arrive aussi sur {@code /commande} par l'URL, par le retour
+   * arrière, ou après une connexion qui redirige. Un seul de ces chemins passe
+   * par le bouton.</p>
+   *
+   * <p>⚠️ Son échec n'empêche PAS de continuer. Le serveur a peut-être déjà le
+   * panier — d'une session précédente, d'un autre appareil. S'arrêter là
+   * priverait d'une commande possible ; on relit donc le panier serveur et
+   * c'est lui qui dira s'il est vide.</p>
+   */
   private charger(): void {
     this.chargement.set(true);
 
@@ -246,6 +271,13 @@ export class Commande {
       error: () => this.erreur.set('Les points de récupération n’ont pas pu être chargés.'),
     });
 
+    this.session
+      .synchroniserLePanier()
+      .pipe(catchError(() => of(null)))
+      .subscribe(() => this.lirePanier());
+  }
+
+  private lirePanier(): void {
     this.http.get<ContenuPanier>('/api/panier').subscribe({
       next: (c) => {
         this.panier.set(c.lignes.length > 0 ? c : null);
@@ -271,6 +303,13 @@ export class Commande {
       .subscribe({
         next: (c) => {
           this.envoi.set(false);
+          // ⚠️ LE PANIER LOCAL SE VIDE ICI, et pas avant.
+          //
+          //    La commande est passée : le serveur a consommé SON panier, et
+          //    le local n'a plus de raison d'être. Le vider plus tôt — à la
+          //    synchronisation, comme le faisait l'ancienne fusion — vidait
+          //    l'écran du panier alors qu'aucune commande n'était passée.
+          this.panierLocal.vider();
           void this.router.navigate(['/paiement', c.id]);
         },
         error: (e: unknown) => {
