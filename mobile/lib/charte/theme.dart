@@ -131,6 +131,38 @@ abstract final class ThemeGarah {
         ),
       ),
 
+      // ⚠️ LE BANDEAU N'AVAIT AUCUN STYLE, ET C'EST CE QUI L'A RENDU
+      //    ILLISIBLE.
+      //
+      //    Sans `snackBarTheme`, Material 3 le dessine avec `inverseSurface`
+      //    et `inversePrimary` : en thème sombre, cela donne un fond CLAIR
+      //    avec un libellé d'action presque BLANC. « Voir le panier » était
+      //    invisible — écrit en blanc sur blanc.
+      //
+      //    Le code paraissait juste ; seul le rendu le disait. C'est la règle
+      //    à retenir : un composant qui ne reçoit pas de style prend celui de
+      //    Material, jamais celui de la charte — et il se dessine hors de
+      //    l'arbre de l'écran, donc rien ne le rattrape.
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: clair ? Jetons.clairTexte : Jetons.sombreSurface,
+        contentTextStyle: TextStyle(
+          color: clair ? Jetons.clairSurface : Jetons.sombreTexte,
+          fontSize: 14,
+        ),
+        // L'action se détache du texte : c'est elle qu'on vient chercher.
+        actionTextColor: Jetons.marque,
+        behavior: SnackBarBehavior.floating,
+        // La bordure vit sur la FORME : SnackBarThemeData n a pas de side.
+        // Sans elle, en sombre, un fond de surface sur un fond nuit ne se
+        // distingue presque pas.
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+          side: clair
+              ? BorderSide.none
+              : const BorderSide(color: Jetons.sombreVerreBordure),
+        ),
+      ),
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: champFond,

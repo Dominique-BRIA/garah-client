@@ -54,8 +54,31 @@ type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
                   (click)="moyen.set('ORANGE_MONEY')">Orange Money</button>
         </div>
 
+        <!-- ⚠️ LE NUMÉRO EST DEMANDÉ, ET IL DOIT L'ÊTRE.
+             L'écran n'envoyait AUCUN numéro. Le serveur en exige un — c'est
+             lui qui part chez l'opérateur et qui recevra la demande de
+             validation — et le paiement échouait donc toujours, sur un
+             message qui n'expliquait rien : « Le numéro de téléphone est
+             obligatoire. »
+
+             Il est PRÉ-REMPLI depuis le profil, mais reste modifiable : on
+             paie souvent avec un autre numéro que celui du compte — celui
+             d'un proche, ou son second opérateur. Le figer obligerait à
+             changer son profil pour payer. -->
+        <label class="gb-libelle" for="p-tel">Numéro Mobile Money</label>
+        <input id="p-tel" type="tel" class="gb-champ" placeholder="+237 6 99 00 00 00"
+               [value]="telephone()" (input)="telephone.set($any($event.target).value)"
+               [disabled]="envoi()" />
+        <p class="aide-champ">
+          @if (moyen() === 'MTN_MOMO') {
+            Ce numéro MTN recevra la demande de validation.
+          } @else {
+            Ce numéro Orange recevra la demande de validation.
+          }
+        </p>
+
         <button type="button" class="gb-btn gb-btn--primaire gb-btn--plein"
-                [disabled]="envoi()" (click)="lancer()">
+                [disabled]="envoi() || telephone().trim() === ''" (click)="lancer()">
           @if (envoi()) { Envoi… } @else { Payer }
         </button>
       </section>
@@ -112,6 +135,11 @@ type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
     .aide { margin: 0; text-align: center; font-size: 0.75rem; color: var(--texte-attenue); }
 
     .moyens { display: flex; gap: 0.6rem; }
+
+    // ⚠️ Un nom PROPRE a ce champ, et non .aide : cette classe existe deja
+    //    plus haut, centree, pour le mot d attente. Reutiliser le nom aurait
+    //    melange les deux styles sans que rien ne le signale.
+    .aide-champ { margin: 0.5rem 0 0.9rem; font-size: 0.78rem; line-height: 1.5; color: var(--texte-attenue); }
 
     .moyen {
       flex: 1;
@@ -194,11 +222,41 @@ export class Paiement {
   readonly id = input.required<string>();
 
   protected readonly moyen = signal<Moyen>('MTN_MOMO');
+
+  /** Le numero qui recevra la demande de validation. */
+  protected readonly telephone = signal('');
   protected readonly paiement = signal<EtatPaiement | null>(null);
 
   protected readonly envoi = signal(false);
   protected readonly verification = signal(false);
   protected readonly erreur = signal<string | null>(null);
+
+  constructor() {
+    this.prefillerLeNumero();
+  }
+
+  /**
+   * Pré-remplit le numéro depuis le profil.
+   *
+   * <p>⚠️ Son échec ne se signale PAS. Le champ reste vide et se saisit à la
+   * main : afficher une erreur ferait croire que le paiement est en panne
+   * alors qu'il ne manque qu'une commodité.</p>
+   */
+  private prefillerLeNumero(): void {
+    this.http.get<{ telephone: string | null }>('/api/profil').subscribe({
+      next: (p) => {
+        const numero = p.telephone?.trim();
+        // On n'écrase pas ce qui a déjà été tapé : la réponse peut arriver
+        // après que le client a commencé à saisir.
+        if (numero && this.telephone() === '') {
+          this.telephone.set(numero);
+        }
+      },
+      error: () => {
+        // Voir la javadoc : volontairement muet.
+      },
+    });
+  }
 
   protected lancer(): void {
     if (this.envoi()) {
@@ -208,7 +266,14 @@ export class Paiement {
     this.erreur.set(null);
 
     this.http
-      .post<EtatPaiement>('/api/paiements', { commandeId: Number(this.id()), moyen: this.moyen() })
+      .post<EtatPaiement>('/api/paiements', {
+        commandeId: Number(this.id()),
+        moyen: this.moyen(),
+        // ⚠️ Il MANQUAIT. Le serveur l exige — c est ce numero qui part chez
+        //    l operateur et recevra la demande de validation — et le paiement
+        //    echouait donc toujours.
+        telephone: this.telephone().trim(),
+      })
       .subscribe({
         next: (p) => {
           this.envoi.set(false);

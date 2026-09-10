@@ -71,6 +71,52 @@ class _EcranPaiementState extends State<EcranPaiement> {
   String _moyen = 'MTN_MOMO';
   _EtatPaiement? _paiement;
 
+  /// Le numéro qui recevra la demande de validation.
+  final _telephone = TextEditingController();
+
+  bool _numeroDemande = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ⚠️ ICI et non dans initState : Services.de() lit un InheritedWidget, ce
+    //    qui est interdit avant que les dependances ne soient posees. Le
+    //    garde-fou evite de redemander le profil a chaque fois que les
+    //    dependances changent — un changement de theme suffirait.
+    if (_numeroDemande) return;
+    _numeroDemande = true;
+    _prefillerLeNumero();
+  }
+
+  @override
+  void dispose() {
+    _telephone.dispose();
+    super.dispose();
+  }
+
+  /// Pré-remplit le numéro depuis le profil.
+  ///
+  /// ⚠️ Son échec ne se signale PAS. Le champ reste vide et se saisit à la
+  ///    main : afficher une erreur ferait croire que le paiement est en panne
+  ///    alors qu'il ne manque qu'une commodité. C'est la seule raison pour
+  ///    laquelle on se permet d'avaler l'exception ici.
+  Future<void> _prefillerLeNumero() async {
+    try {
+      final profil =
+          await Services.de(context).api.obtenir('/api/profil')
+              as Map<String, dynamic>;
+      final numero = (profil['telephone'] as String?)?.trim();
+      if (!mounted || numero == null || numero.isEmpty) return;
+      // On n'écrase pas ce qui a déjà été tapé : la réponse peut arriver
+      // après que le client a commencé à saisir.
+      if (_telephone.text.isEmpty) {
+        setState(() => _telephone.text = numero);
+      }
+    } catch (_) {
+      // Voir la javadoc : volontairement muet.
+    }
+  }
+
   bool _envoi = false;
   bool _verification = false;
   String? _erreur;
@@ -87,6 +133,10 @@ class _EcranPaiementState extends State<EcranPaiement> {
         await Services.de(context).api.poster('/api/paiements', {
               'commandeId': widget.commandeId,
               'moyen': _moyen,
+              // ⚠️ Il MANQUAIT. Le serveur l exige — c est ce numero qui part
+              //    chez l operateur et recevra la demande de validation — et
+              //    le paiement echouait donc toujours.
+              'telephone': _telephone.text.trim(),
             })
             as Map<String, dynamic>,
       );
@@ -259,10 +309,41 @@ class _EcranPaiementState extends State<EcranPaiement> {
           ),
         ),
       ),
+    const SizedBox(height: 16),
+    // ⚠️ LE NUMÉRO EST DEMANDÉ, ET IL DOIT L'ÊTRE.
+    //
+    //    L'écran promettait « le téléphone associé à votre compte » et
+    //    n'envoyait AUCUN numéro. Le serveur en exige un — c'est lui qui part
+    //    chez l'opérateur et qui recevra la demande de validation — et le
+    //    paiement échouait donc toujours, sur un message qui n'expliquait
+    //    rien : « Le numéro de téléphone est obligatoire. »
+    //
+    //    Il est PRÉ-REMPLI depuis le profil, mais reste modifiable : on paie
+    //    souvent avec un autre numéro que celui du compte — celui d'un
+    //    proche, ou son second opérateur. Le figer obligerait à changer son
+    //    profil pour payer.
+    Text(
+      'Numéro Mobile Money',
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.4,
+        color: context.texteAttenue,
+      ),
+    ),
+    const SizedBox(height: 8),
+    TextField(
+      controller: _telephone,
+      keyboardType: TextInputType.phone,
+      enabled: !_envoi,
+      decoration: const InputDecoration(hintText: '+237 6 99 00 00 00'),
+      onChanged: (_) => setState(() {}),
+    ),
     const SizedBox(height: 8),
     Text(
-      'Vous recevrez une demande de validation sur le téléphone associé à '
-      'votre compte.',
+      _moyen == 'MTN_MOMO'
+          ? 'Ce numéro MTN recevra la demande de validation.'
+          : 'Ce numéro Orange recevra la demande de validation.',
       style: TextStyle(
         fontSize: 12.5,
         height: 1.45,
@@ -271,7 +352,11 @@ class _EcranPaiementState extends State<EcranPaiement> {
     ),
     const SizedBox(height: 18),
     FilledButton(
-      onPressed: _envoi ? null : _lancer,
+      // ⚠️ Désactivé tant que le numéro est vide, plutôt que de laisser partir
+      //    un appel dont on connaît déjà le refus. Un aller-retour réseau pour
+      //    apprendre ce qu'on savait avant de l'envoyer, sur un forfait
+      //    compté, n'est pas gratuit.
+      onPressed: _envoi || _telephone.text.trim().isEmpty ? null : _lancer,
       child: Text(_envoi ? 'Envoi…' : 'Lancer le paiement'),
     ),
   ];
