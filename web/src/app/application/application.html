@@ -1,0 +1,96 @@
+<section class="entete">
+  <p class="entete__sur">Application Android</p>
+  <h1 class="entete__titre">GARAH sur votre téléphone</h1>
+  <p class="entete__phrase">
+    Votre panier survit à la fermeture, la session ne redemande pas votre mot de
+    passe, et les réponses du service client arrivent en direct.
+  </p>
+</section>
+
+<!-- ⚠️ On le dit AVANT le bouton, pas après. Quelqu'un sur un ordinateur qui
+     télécharge 18 Mo pour découvrir ensuite qu'il ne peut rien en faire a
+     payé pour rien. -->
+@if (horsAndroid()) {
+  <div class="gb-alerte avis">
+    <strong>Vous ne semblez pas être sur un téléphone Android.</strong>
+    Ce fichier ne s’installe que sur Android. Sur ordinateur, la boutique fait
+    déjà tout ce que fait l’application.
+  </div>
+}
+
+<!-- Le bouton principal : un seul, celui qui a le plus de chances d'être bon. -->
+<section class="gb-carte principal">
+  <p class="principal__pour">Pour votre téléphone</p>
+  <p class="principal__quoi">{{ conseillee().libelle }}</p>
+  <p class="principal__detail">{{ conseillee().detail }}</p>
+
+  <a class="gb-btn gb-btn--primaire gb-btn--plein telecharger"
+     [href]="lien(conseillee())" [download]="conseillee().fichier">
+    Télécharger l’application
+    <span class="telecharger__poids">{{ conseillee().poidsMo }} Mo</span>
+  </a>
+
+  <!-- ⚠️ Quand la détection n'a rien pu trancher, on le DIT. Laisser croire à
+       une certitude qu'on n'a pas, c'est envoyer quelqu'un télécharger 18 Mo
+       deux fois. -->
+  @if (incertain()) {
+    <p class="principal__doute">
+      Nous n’avons pas pu reconnaître votre téléphone avec certitude. Cette
+      version convient à la très grande majorité. Si l’installation est refusée,
+      prenez la version 32 bits ci-dessous.
+    </p>
+  }
+</section>
+
+<!-- Les autres versions. Elles ne sont pas cachées : la première peut refuser
+     de s'installer, et il faut alors pouvoir essayer l'autre sans écrire au
+     service client. -->
+<section class="autres">
+  <p class="autres__titre">Les autres versions</p>
+  <p class="autres__aide">
+    À prendre seulement si celle du dessus a été refusée à l’installation.
+  </p>
+
+  <ul class="autres__liste">
+    @for (v of autres(); track v.abi) {
+      <li class="autre">
+        <div class="autre__texte">
+          <p class="autre__nom">{{ v.libelle }}</p>
+          <p class="autre__detail">{{ v.detail }}</p>
+        </div>
+        <a class="gb-btn gb-btn--secondaire" [href]="lien(v)" [download]="v.fichier">
+          {{ v.poidsMo }} Mo
+        </a>
+      </li>
+    }
+  </ul>
+</section>
+
+<!-- ⚠️ Ces trois étapes ne sont pas de la documentation de confort. Android
+     BLOQUE l'installation d'un fichier qui ne vient pas du Play Store, avec un
+     message qui ressemble à une alerte de sécurité. Sans ces lignes, une
+     partie des gens s'arrête là et conclut que l'application est dangereuse. -->
+<section class="gb-carte pose">
+  <p class="pose__titre">Comment l’installer</p>
+  <ol class="pose__etapes">
+    <li>
+      <strong>Téléchargez le fichier.</strong>
+      Votre navigateur peut demander de confirmer : acceptez.
+    </li>
+    <li>
+      <strong>Ouvrez-le</strong> depuis la barre de notifications, ou depuis le
+      dossier <em>Téléchargements</em>.
+    </li>
+    <li>
+      <strong>Android va vous prévenir</strong> que le fichier ne vient pas du
+      Play Store. Choisissez <em>Paramètres</em>, puis autorisez cette
+      installation. C’est normal : nous ne passons pas encore par le Play Store.
+    </li>
+  </ol>
+
+  <p class="pose__note">
+    Si l’installation est refusée avec un message parlant d’incompatibilité,
+    revenez ici et prenez une autre version : votre téléphone n’a pas le
+    processeur que nous avions supposé.
+  </p>
+</section>

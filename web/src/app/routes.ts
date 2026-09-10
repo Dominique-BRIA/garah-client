@@ -39,6 +39,13 @@ export const routes: Routes = [
   // '/suivi/GRH…' lance la recherche — arriver par un lien partagé ne doit pas
   // obliger à resaisir ce que le lien contenait déjà.
   {
+    // ⚠️ PUBLIQUE, et elle doit l etre : on telecharge l application AVANT
+    //    d avoir un compte. La mettre derriere le garde ferait passer par une
+    //    inscription pour obtenir le moyen de s inscrire plus facilement.
+    path: 'application',
+    loadComponent: () => import('./application/application').then((m) => m.Application),
+  },
+  {
     path: 'suivi',
     loadComponent: () => import('./suivi/suivi').then((m) => m.Suivi),
   },

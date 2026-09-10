@@ -1,0 +1,171 @@
+:host {
+  display: block;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0 1.25rem 3rem;
+}
+
+// --- L'entête ----------------------------------------------------------------
+.entete { padding: 2rem 0 1.5rem; }
+
+.entete__sur {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--marque);
+}
+
+.entete__titre {
+  margin: 0.4rem 0 0.6rem;
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  line-height: 1.15;
+}
+
+.entete__phrase {
+  margin: 0;
+  color: var(--texte-attenue);
+  line-height: 1.6;
+}
+
+.avis { margin-bottom: 1.25rem; }
+
+// --- Le bouton principal -----------------------------------------------------
+//
+// ⚠️ Il occupe toute la largeur et porte le POIDS du fichier. Dix-huit
+//    mégaoctets sur un forfait qui se compte, ce n'est pas un détail : lancer
+//    un tel téléchargement sans prévenir, c'est prendre l'argent de quelqu'un
+//    sans le lui dire.
+.principal {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.principal__pour {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texte-attenue);
+}
+
+.principal__quoi {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.principal__detail {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  color: var(--texte-attenue);
+  line-height: 1.5;
+}
+
+.telecharger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-size: 1rem;
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+
+// Le poids se lit COMME une étiquette, pas comme un second libellé : plus
+// petit, moins contrasté, collé au texte principal.
+.telecharger__poids {
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.85;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.principal__doute {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--texte-attenue);
+}
+
+// --- Les autres versions -----------------------------------------------------
+.autres { margin-top: 2rem; }
+
+.autres__titre {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texte-attenue);
+}
+
+.autres__aide {
+  margin: 0.3rem 0 0.9rem;
+  font-size: 0.82rem;
+  color: var(--texte-attenue);
+}
+
+.autres__liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.autre {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--verre-bordure);
+  border-radius: var(--rayon-moyen);
+  background: var(--surface);
+}
+
+// `min-width: 0` : sans lui, un détail long pousse le bouton hors de la carte
+// au lieu de se replier.
+.autre__texte { flex: 1; min-width: 0; }
+
+.autre__nom { margin: 0; font-size: 0.9rem; font-weight: 600; }
+
+.autre__detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--texte-attenue);
+  line-height: 1.45;
+}
+
+// --- La pose ------------------------------------------------------------------
+.pose { margin-top: 2rem; padding: 1.5rem; }
+
+.pose__titre {
+  margin: 0 0 0.9rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.pose__etapes {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.pose__note {
+  margin: 1.1rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--verre-bordure);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--texte-attenue);
+}
