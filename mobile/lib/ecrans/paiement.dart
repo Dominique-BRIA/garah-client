@@ -436,7 +436,7 @@ class _EcranPaiementState extends State<EcranPaiement> {
       if (p.codeUssd != null && p.codeUssd!.isNotEmpty) ...[
         const SizedBox(height: 12),
         Text(
-          'Rien reçu ? Composez undefined sur ce téléphone.',
+          'Rien reçu ? Composez ${p.codeUssd} sur ce téléphone.',
           style: TextStyle(fontSize: 13, color: context.texteAttenue),
         ),
       ],
