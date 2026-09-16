@@ -1,0 +1,114 @@
+// Feuille commune aux deux pages légales.
+//
+// ⚠️ Une seule, partagée : elles ont exactement la même forme, et deux copies
+//    divergeraient à la première retouche — on corrigerait la confidentialité
+//    et pas les conditions, ce que personne ne remarquerait avant longtemps.
+
+.legal {
+  // Une colonne étroite. Au-delà de ~70 caractères, l'œil perd la ligne
+  // suivante en revenant à gauche — et ces pages sont longues.
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.legal__titre {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.legal__date {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--texte-attenue);
+}
+
+// Le résumé en tête.
+//
+// 🎯 Personne ne lit une politique de confidentialité en entier. Si le texte
+//    complet est la seule forme disponible, l'information n'est pas
+//    communiquée — elle est seulement publiée. Ces quelques lignes sont ce que
+//    la plupart des gens liront, et elles doivent donc être VRAIES à elles
+//    seules, pas un teaser du reste.
+.legal__resume {
+  margin: 1.25rem 0 0;
+  padding: 1rem 1.1rem;
+  border-radius: 0.75rem;
+  background: var(--surface-douce);
+  border-left: 3px solid var(--marque);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.legal__resume p { margin: 0 0 0.6rem; }
+.legal__resume p:last-child { margin-bottom: 0; }
+
+.legal h2 {
+  margin: 2rem 0 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.legal h3 {
+  margin: 1.3rem 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.legal p,
+.legal li {
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.legal ul {
+  margin: 0.5rem 0;
+  padding-left: 1.1rem;
+}
+
+.legal li { margin-bottom: 0.35rem; }
+
+// Le tableau des données.
+//
+// Il déborde sur un téléphone de 360 px : il défile DANS son cadre, jamais en
+// poussant la page — une page qui glisse horizontalement donne le sentiment
+// d'un site cassé.
+.legal__table-cadre {
+  overflow-x: auto;
+  margin: 0.75rem 0 0;
+}
+
+.legal table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.legal th,
+.legal td {
+  text-align: left;
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--verre-bordure);
+  vertical-align: top;
+}
+
+.legal th {
+  font-weight: 600;
+  color: var(--texte-attenue);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.legal__contact {
+  margin-top: 2rem;
+  padding: 1rem 1.1rem;
+  border-radius: 0.75rem;
+  background: var(--surface-douce);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.legal a { color: var(--primaire); }

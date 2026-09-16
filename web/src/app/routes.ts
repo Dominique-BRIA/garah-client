@@ -169,5 +169,30 @@ export const routes: Routes = [
     loadComponent: () => import('./compte/profil').then((m) => m.Profil),
   },
 
+  // ---------------------------------------------------------------------
+  // Les pages légales — publiques, et elles DOIVENT l'être
+  // ---------------------------------------------------------------------
+  //
+  // ⚠️ Google exige ces deux adresses pour publier l'application OAuth
+  //    « Externe ». Tant qu'elles n'existaient pas, l'écran de consentement
+  //    restait en mode « Test » : seuls les comptes inscrits comme testeurs
+  //    pouvaient se connecter, et tous les autres recevaient une erreur qui
+  //    n'expliquait rien.
+  //
+  // ⚠️ Elles répondaient DÉJÀ 200 avant d'exister, et c'est le piège : la
+  //    route attrape-tout ci-dessous rend la page d'accueil pour n'importe
+  //    quelle adresse. Un contrôle au code HTTP concluait donc que la
+  //    politique de confidentialité était en ligne — alors qu'on servait la
+  //    vitrine. Sur une application à page unique, un 200 ne prouve rien.
+  {
+    path: 'confidentialite',
+    loadComponent: () =>
+      import('./legal/confidentialite').then((m) => m.Confidentialite),
+  },
+  {
+    path: 'conditions',
+    loadComponent: () => import('./legal/conditions').then((m) => m.Conditions),
+  },
+
   { path: '**', redirectTo: '' },
 ];
