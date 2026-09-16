@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/client_api.dart';
+import 'google.dart';
 import 'panier_local.dart';
 
 /// Qui est connecté, et pour combien de temps.
@@ -30,6 +31,17 @@ class ServiceSession extends ChangeNotifier {
 
   final ClientApi _api;
   final PanierLocal _panier;
+
+  /// Posé par `main` après construction.
+  ///
+  /// ⚠️ Une propriété, et non un paramètre du constructeur : `ServiceGoogle`
+  /// a besoin de `ClientApi`, comme cette classe. Les passer l'un à l'autre
+  /// dans les constructeurs ferait un ordre d'initialisation fragile pour un
+  /// lien dont la session n'a besoin qu'à la déconnexion.
+  ///
+  /// Nullable : les tests construisent une session sans Google, et
+  /// `deconnecter()` doit marcher sans lui.
+  ServiceGoogle? google;
 
   ({int id, String nom, String email})? _utilisateur;
 
@@ -68,8 +80,33 @@ class ServiceSession extends ChangeNotifier {
   }
 
   Future<void> connecter(String email, String motDePasse) async {
-    final reponse = await _api.connecter(email, motDePasse);
+    await _ouvrir(await _api.connecter(email, motDePasse), secours: email);
+  }
 
+  /// « Continuer avec Google ».
+  ///
+  /// Le jeton vient de `ServiceGoogle`, le serveur le vérifie et décide seul
+  /// (D-51). Une fois la réponse reçue, il ne se passe rien de particulier :
+  /// elle a **exactement** la même forme que celle du mot de passe, donc elle
+  /// emprunte le même chemin.
+  Future<void> connecterAvecGoogle(String jetonGoogle) async {
+    await _ouvrir(await _api.connecterAvecGoogle(jetonGoogle), secours: '');
+  }
+
+  /// Ce qui suit TOUTE connexion réussie, quelle qu'en soit la porte.
+  ///
+  /// ⚠️ **Extrait de [connecter] sans rien changer**, pour que la connexion
+  /// Google ne puisse pas en diverger. Le défaut décrit ci-dessous a coûté une
+  /// session de diagnostic ; le laisser en double, c'eût été accepter de le
+  /// reproduire dans la moitié des chemins le jour d'une correction.
+  ///
+  /// `secours` est ce qu'on affiche si le serveur ne renvoyait ni nom ni
+  /// adresse : l'adresse saisie pour le mot de passe, rien pour Google — où
+  /// l'utilisateur n'a rien tapé.
+  Future<void> _ouvrir(
+    Map<String, dynamic> reponse, {
+    required String secours,
+  }) async {
     // ⚠️ Le compte est IMBRIQUE dans la reponse : `utilisateur: { id, nom,
     //    ... }`. Ces trois champs etaient lus a la racine — `utilisateurId`,
     //    `nom`, `email` — ou ils n'ont jamais existe.
@@ -85,8 +122,8 @@ class ServiceSession extends ChangeNotifier {
 
     _utilisateur = (
       id: (compte['id'] as num).toInt(),
-      nom: (compte['nom'] as String?) ?? email,
-      email: (compte['email'] as String?) ?? email,
+      nom: (compte['nom'] as String?) ?? secours,
+      email: (compte['email'] as String?) ?? secours,
     );
 
     await _retenirLeCookie();
@@ -112,6 +149,18 @@ class ServiceSession extends ChangeNotifier {
       // des deux mondes, surtout sur un téléphone partagé.
     }
     _api.oublier();
+
+    // ⚠️ Oublier AUSSI le compte choisi chez Google.
+    //
+    //    Sans cela, Google reproposerait silencieusement le même compte au
+    //    prochain clic : la personne appuierait sur « Se déconnecter », puis
+    //    sur « Continuer avec Google », et se retrouverait sur le compte
+    //    qu'elle voulait quitter. Changer de compte deviendrait impossible
+    //    depuis l'application — un défaut vécu comme « je ne peux pas me
+    //    déconnecter », et qui ne se voit qu'avec deux comptes sur le même
+    //    téléphone.
+    await google?.oublier();
+
     _utilisateur = null;
     await _oublierLeCookie();
     notifyListeners();

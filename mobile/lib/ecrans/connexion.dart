@@ -35,6 +35,43 @@ class _EcranConnexionState extends State<EcranConnexion> {
   bool _envoi = false;
   String? _echec;
 
+  /// Séparé de [_envoi], volontairement.
+  ///
+  /// Les deux boutons se désactivent ensemble — on ne lance pas deux
+  /// connexions —, mais un seul doit afficher « Connexion… ». Un indicateur
+  /// unique ferait tourner le bouton Google pendant qu'on valide un mot de
+  /// passe, et inversement.
+  bool _envoiGoogle = false;
+
+  /// Vrai quand le bouton Google peut être proposé.
+  ///
+  /// Faux tant que la configuration n'est pas revenue, et faux pour toujours
+  /// si l'API n'annonce aucun identifiant. 🎯 **On n'affiche pas un bouton qui
+  /// échouerait à coup sûr** : c'est « dire ce qui manque avant le clic », pris
+  /// du côté de celui qui propose.
+  bool _googleDisponible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // ⚠️ Pas dans initState directement : Services.de() a besoin d'un context
+    //    déjà monté dans l'arbre. Le post-frame le garantit.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _preparerGoogle());
+  }
+
+  /// ⚠️ Ici, et **pas** au démarrage de l'application.
+  ///
+  /// `preparer()` interroge l'API. Le faire au lancement retarderait la
+  /// première image pour une fonctionnalité dont on n'a besoin que sur cet
+  /// écran — et rendrait l'ouverture de la boutique dépendante du réseau,
+  /// alors que la vitrine doit s'afficher hors connexion.
+  Future<void> _preparerGoogle() async {
+    if (!mounted) return;
+    final google = Services.de(context).google;
+    await google.preparer();
+    if (mounted) setState(() => _googleDisponible = google.disponible);
+  }
+
   @override
   void dispose() {
     _email.dispose();
@@ -88,6 +125,57 @@ class _EcranConnexionState extends State<EcranConnexion> {
       if (!mounted) return;
       setState(() {
         _envoi = false;
+        _echec = 'La connexion a echoue. Reessayez dans un instant.';
+      });
+    }
+  }
+
+  /// « Continuer avec Google ».
+  ///
+  /// Trois issues, et la première est celle qu'on oublie :
+  ///
+  /// ```text
+  /// annulation   jeton null  → on remet l ecran comme avant, SANS message
+  /// echec        ErreurApi   → on affiche, comme pour le mot de passe
+  /// succes                   → on ferme l ecran, comme pour le mot de passe
+  /// ```
+  ///
+  /// 🎯 **Annuler n'est pas échouer.** Afficher « connexion impossible » en
+  /// rouge parce que quelqu'un a fermé la feuille Google d'un geste laisse
+  /// croire à une panne, et décourage de réessayer.
+  Future<void> _continuerAvecGoogle() async {
+    if (_envoi || _envoiGoogle) return;
+    setState(() {
+      _envoiGoogle = true;
+      _echec = null;
+    });
+
+    final services = Services.de(context);
+    final navigateur = Navigator.of(context);
+    try {
+      final jeton = await services.google.obtenirLeJeton();
+
+      if (jeton == null) {
+        // Annulation. On rend simplement l'écran à son état d'avant.
+        if (mounted) setState(() => _envoiGoogle = false);
+        return;
+      }
+
+      await services.session.connecterAvecGoogle(jeton);
+      if (mounted) navigateur.pop();
+    } on ErreurApi catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _envoiGoogle = false;
+        _echec = e.message;
+      });
+    } catch (_) {
+      // Le même filet que _connecter, et pour la même raison : tout ce qui
+      // casse APRÈS la réponse lève autre chose qu'une ErreurApi, et le
+      // bouton tournerait indéfiniment sans message.
+      if (!mounted) return;
+      setState(() {
+        _envoiGoogle = false;
         _echec = 'La connexion a echoue. Reessayez dans un instant.';
       });
     }
@@ -159,9 +247,62 @@ class _EcranConnexionState extends State<EcranConnexion> {
           ],
           const SizedBox(height: 4),
           FilledButton(
-            onPressed: _manque == null && !_envoi ? _connecter : null,
+            onPressed: _manque == null && !_envoi && !_envoiGoogle
+                ? _connecter
+                : null,
             child: Text(_envoi ? 'Connexion…' : 'Se connecter'),
           ),
+
+          // ⚠️ Le bloc entier disparaît quand Google n'est pas configuré.
+          //    Un bouton grisé ferait chercher ce qui manque du côté de
+          //    l'utilisateur, alors que le manque est côté serveur.
+          if (_googleDisponible) ...[
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(child: Divider(color: context.texteAttenue)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'ou',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: context.texteAttenue,
+                    ),
+                  ),
+                ),
+                Expanded(child: Divider(color: context.texteAttenue)),
+              ],
+            ),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: !_envoi && !_envoiGoogle ? _continuerAvecGoogle : null,
+              icon: const Text(
+                'G',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  // Le bleu de Google. Une lettre plutôt qu'un logo : embarquer
+                  // l'image officielle ajoute un fichier à l'APK et impose des
+                  // règles d'usage de marque qu'on ne veut pas suivre de
+                  // travers.
+                  color: Color(0xFF4285F4),
+                ),
+              ),
+              label: Text(
+                _envoiGoogle ? 'Connexion…' : 'Continuer avec Google',
+              ),
+            ),
+            const SizedBox(height: 10),
+            // 🎯 Dire ce qui va se passer AVANT le clic. Sans cette phrase,
+            //    quelqu'un qui n'a pas de compte hésite à appuyer, croyant
+            //    que le bouton n'est là que pour se reconnecter.
+            Text(
+              'Si vous n\'avez pas encore de compte, il sera créé.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12.5, color: context.texteAttenue),
+            ),
+          ],
 
           const SizedBox(height: 20),
           // 🎯 Sans ce lien, l'écran d'inscription n'existait pas : rien n'y

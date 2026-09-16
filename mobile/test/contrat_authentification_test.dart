@@ -112,6 +112,92 @@ void main() {
     });
   });
 
+  group('« Continuer avec Google »', () {
+    /// 🎯 **Le test le plus important de ce groupe.**
+    ///
+    /// On n'envoie **que** le jeton. Ajouter un `email` — ce qui paraît
+    /// serviable, et ce que font beaucoup d'intégrations — donnerait à
+    /// quiconque modifie l'APK le moyen d'ouvrir la session de n'importe qui :
+    /// il suffirait de poster l'adresse de sa victime.
+    ///
+    /// Le serveur lit l'adresse **dans le jeton**, après en avoir vérifié la
+    /// signature (D-51). Le jeton est la seule chose que le client ne peut pas
+    /// fabriquer, donc la seule qu'il a le droit de transmettre.
+    test('⚠️ n’envoie QUE le jeton : ni adresse, ni nom', () async {
+      Map<String, dynamic>? envoye;
+      String? chemin;
+
+      final api = ClientApi(
+        transport: MockClient((requete) async {
+          chemin = requete.url.path;
+          envoye = jsonDecode(requete.body) as Map<String, dynamic>;
+          return http.Response(
+            jsonEncode(corpsReel),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+
+      await api.connecterAvecGoogle('un-jeton-google');
+
+      expect(chemin, '/api/auth/social');
+      expect(envoye!.keys.toSet(), {'fournisseur', 'jeton'});
+      expect(envoye!['fournisseur'], 'GOOGLE');
+      expect(
+        envoye!['email'],
+        isNull,
+        reason: 'le serveur le lit DANS le jeton',
+      );
+      expect(envoye!['nom'], isNull);
+    });
+
+    /// La réponse est la **même** que celle du mot de passe (D-36).
+    ///
+    /// C'est ce qui permet aux deux chemins de partager tout ce qui suit la
+    /// connexion. Si le serveur venait à renvoyer autre chose ici, ce test
+    /// tomberait — avant que l'écran ne se remette à tourner indéfiniment,
+    /// c'est-à-dire avant que le défaut que ce fichier existe pour empêcher ne
+    /// se reproduise par une autre porte.
+    test('la réponse a la même forme que celle du mot de passe', () async {
+      final api = clientQuiRend(corpsReel, cookie: cookieReel);
+      final corps = await api.connecterAvecGoogle('un-jeton-google');
+
+      expect(corps['jeton'], isNotNull);
+      expect((corps['utilisateur'] as Map)['id'], 1);
+      expect(api.jetonRafraichissement, isNotNull);
+    });
+
+    /// Un compte déjà pris que Google n'atteste pas : le serveur répond 409 et
+    /// explique quoi faire. On relaie **son** message, on n'en invente pas un
+    /// — sans quoi les deux divergeraient le jour où le sien change.
+    test('un refus de rattachement remonte le message du serveur', () {
+      final api = ClientApi(
+        transport: MockClient((requete) async {
+          return http.Response(
+            jsonEncode({
+              'code': 'RATTACHEMENT_REFUSE',
+              'message': 'Un compte existe déjà avec cette adresse.',
+            }),
+            409,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+
+      expect(
+        () => api.connecterAvecGoogle('un-jeton-google'),
+        throwsA(
+          isA<ErreurApi>().having(
+            (e) => e.message,
+            'message',
+            contains('existe déjà'),
+          ),
+        ),
+      );
+    });
+  });
+
   group('l’en-tête exigé', () {
     test(
       '⚠️ le rafraîchissement porte X-Garah-Client, et le bon cookie',

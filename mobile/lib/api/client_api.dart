@@ -259,6 +259,56 @@ class ClientApi {
     return corps;
   }
 
+  /// « Continuer avec Google » — même contrat, autre preuve d'identité.
+  ///
+  /// Le serveur renvoie **exactement** la même réponse et pose le **même**
+  /// cookie que `/api/auth/connexion` (D-36, D-51). C'est pour cela que cette
+  /// méthode peut être la jumelle de [connecter] : rien en aval ne sait, ni
+  /// n'a besoin de savoir, par quelle porte la session est entrée.
+  ///
+  /// ⚠️ On envoie le jeton, et **rien d'autre** — ni adresse, ni nom. Le
+  /// serveur les lit dans le jeton après en avoir vérifié la signature. Poster
+  /// une adresse offrirait à quiconque modifie l'application le moyen d'ouvrir
+  /// la session de n'importe qui.
+  Future<Map<String, dynamic>> connecterAvecGoogle(String jetonGoogle) async {
+    http.Response reponse;
+    try {
+      reponse = await _http.post(
+        Uri.parse('$urlApi/api/auth/social'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'fournisseur': 'GOOGLE', 'jeton': jetonGoogle}),
+      );
+    } catch (_) {
+      throw ErreurApi(0, 'Pas de connexion. Réessayez dans un instant.');
+    }
+
+    if (reponse.statusCode != 200) {
+      // Le serveur explique déjà le 409 (adresse prise par un compte qu'il ne
+      // peut pas rattacher) et le 422 (aucune adresse fournie). On relaie son
+      // message plutôt que d'en recopier un ici, qui divergerait le jour où
+      // le sien change.
+      //
+      // Le 401 fait exception : son message serveur est volontairement vague
+      // pour ne rien apprendre à un attaquant, et le cas courant est un jeton
+      // périmé — l'écran est resté ouvert trop longtemps.
+      throw ErreurApi(
+        reponse.statusCode,
+        reponse.statusCode == 401
+            ? 'Connexion Google refusée. Réessayez.'
+            : _messageDe(reponse),
+      );
+    }
+
+    final corps =
+        jsonDecode(utf8.decode(reponse.bodyBytes)) as Map<String, dynamic>;
+    _jeton = corps[champJeton] as String?;
+    _lireLeCookie(reponse);
+    return corps;
+  }
+
   String? get jetonRafraichissement => _rafraichissement;
 
   /// Ce que le serveur a refusé, dit CHAMP PAR CHAMP.
