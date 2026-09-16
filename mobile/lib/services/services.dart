@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../api/client_api.dart';
+import 'configuration.dart';
 import 'google.dart';
 import 'panier_local.dart';
 import 'session.dart';
@@ -30,6 +31,7 @@ class Services extends InheritedWidget {
     required this.theme,
     required this.tempsReel,
     required this.google,
+    required this.configuration,
     required super.child,
   });
 
@@ -45,6 +47,9 @@ class Services extends InheritedWidget {
   /// « Continuer avec Google ». Une seule instance : le SDK ne s initialise
   /// qu une fois par lancement.
   final ServiceGoogle google;
+
+  /// Ce que l API annonce sur son propre deploiement. Lu UNE fois.
+  final ServiceConfiguration configuration;
 
   static Services de(BuildContext context) {
     final services = context.dependOnInheritedWidgetOfExactType<Services>();

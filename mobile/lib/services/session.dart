@@ -93,6 +93,20 @@ class ServiceSession extends ChangeNotifier {
     await _ouvrir(await _api.connecterAvecGoogle(jetonGoogle), secours: '');
   }
 
+  /// « Continuer avec WhatsApp », étape 2 : le code est vérifié par le serveur.
+  ///
+  /// Comme pour Google, rien de particulier ne se passe ici : la réponse a la
+  /// même forme que celle du mot de passe, donc elle emprunte le même chemin.
+  ///
+  /// `secours` vaut le numéro : un compte né par WhatsApp n'a ni nom ni
+  /// adresse au départ, et afficher son numéro vaut mieux qu'un blanc.
+  Future<void> connecterAvecWhatsApp(String telephone, String code) async {
+    await _ouvrir(
+      await _api.connecterAvecWhatsApp(telephone, code),
+      secours: telephone,
+    );
+  }
+
   /// Ce qui suit TOUTE connexion réussie, quelle qu'en soit la porte.
   ///
   /// ⚠️ **Extrait de [connecter] sans rien changer**, pour que la connexion

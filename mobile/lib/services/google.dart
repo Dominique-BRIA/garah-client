@@ -1,6 +1,7 @@
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../api/client_api.dart';
+import 'configuration.dart';
 
 /// « Continuer avec Google » — la partie qui parle à Google.
 ///
@@ -20,9 +21,9 @@ import '../api/client_api.dart';
 /// expérience nettement pire que la feuille native qui liste les comptes déjà
 /// présents sur le téléphone.
 class ServiceGoogle {
-  ServiceGoogle(this._api);
+  ServiceGoogle(this._configuration);
 
-  final ClientApi _api;
+  final ServiceConfiguration _configuration;
 
   /// L'identifiant du client **Web**, annoncé par l'API.
   ///
@@ -66,15 +67,14 @@ class ServiceGoogle {
     if (_pret) return;
 
     try {
-      final config = await _api.obtenir('/api/configuration');
-      final identifiant =
-          (config as Map<String, dynamic>)['identifiantClientGoogle'];
+      await _configuration.charger();
+      final identifiant = _configuration.identifiantClientGoogle;
 
       // ⚠️ La clé est toujours présente côté serveur, et une chaîne VIDE
-      //    signifie « ne propose pas ce bouton ». On traite donc le vide
-      //    exactement comme l'absence — sans quoi on initialiserait le SDK
+      //    signifie « ne propose pas ce bouton ». `identifiantClientGoogle`
+      //    rend donc `null` dans ce cas — sans quoi on initialiserait le SDK
       //    avec une chaîne vide et l'échec surviendrait au clic.
-      if (identifiant is! String || identifiant.isEmpty) {
+      if (identifiant == null) {
         _pret = true;
         return;
       }

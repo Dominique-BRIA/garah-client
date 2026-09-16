@@ -198,6 +198,78 @@ void main() {
     });
   });
 
+  group('« Continuer avec WhatsApp »', () {
+    /// ⚠️ Le numéro affiché vient du SERVEUR, pas de la saisie.
+    ///
+    /// C'est lui qui prouve que le serveur a compris le même numéro que la
+    /// personne croyait taper : « 699 00 07 77 » devient `+237 6•• •• •• 77`,
+    /// et une erreur de pays se voit tout de suite. Réafficher la saisie ne
+    /// vérifierait rien.
+    test(
+      'l’étape 1 rend le numéro NORMALISÉ et masqué par le serveur',
+      () async {
+        final api = ClientApi(
+          transport: MockClient((requete) async {
+            expect(requete.url.path, '/api/auth/whatsapp/code');
+            return http.Response(
+              jsonEncode({'telephone': '+2376•• •• •• 77'}),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }),
+        );
+
+        expect(
+          await api.demanderUnCodeWhatsApp('699 00 07 77'),
+          '+2376•• •• •• 77',
+        );
+      },
+    );
+
+    /// La réponse est la **même** que celle du mot de passe (D-36) — c'est ce
+    /// qui permet aux trois chemins de partager tout ce qui suit la connexion.
+    test('l’étape 2 rend la même forme que le mot de passe', () async {
+      final api = clientQuiRend(corpsReel, cookie: cookieReel);
+      final corps = await api.connecterAvecWhatsApp('+237699000777', '123456');
+
+      expect(corps['jeton'], isNotNull);
+      expect((corps['utilisateur'] as Map)['id'], 1);
+      expect(api.jetonRafraichissement, isNotNull);
+    });
+
+    /// ⚠️ Sur un code refusé, on relaie le message du SERVEUR.
+    ///
+    /// Contrairement au mot de passe, le sien est déjà le bon : « ce code ne
+    /// convient pas, ou il a expiré » dit quoi faire sans révéler laquelle des
+    /// deux causes s'applique — donc sans dire si un code est en cours sur ce
+    /// numéro, et donc si quelqu'un est en train de s'y connecter.
+    test('un code refusé remonte le message du serveur', () {
+      final api = ClientApi(
+        transport: MockClient((requete) async {
+          return http.Response(
+            jsonEncode({
+              'code': 'CODE_INVALIDE',
+              'message': 'Ce code ne convient pas, ou il a expiré.',
+            }),
+            401,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+
+      expect(
+        () => api.connecterAvecWhatsApp('+237699000777', '000000'),
+        throwsA(
+          isA<ErreurApi>().having(
+            (e) => e.message,
+            'message',
+            contains('ne convient pas'),
+          ),
+        ),
+      );
+    });
+  });
+
   group('l’en-tête exigé', () {
     test(
       '⚠️ le rafraîchissement porte X-Garah-Client, et le bon cookie',

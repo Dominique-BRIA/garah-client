@@ -4,6 +4,7 @@ import 'api/client_api.dart';
 import 'charte/theme.dart';
 import 'coque.dart';
 import 'ecrans/ouverture.dart';
+import 'services/configuration.dart';
 import 'services/google.dart';
 import 'services/notifications.dart';
 import 'services/panier_local.dart';
@@ -40,6 +41,7 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
   late final ServiceTheme _theme;
   late final ServiceNotifications _notifications;
   late final ServiceTempsReel _tempsReel;
+  late final ServiceConfiguration _configuration;
   late final ServiceGoogle _google;
 
   @override
@@ -55,7 +57,8 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
     // ⚠️ Construit, mais PAS prepare ici : preparer() appelle l API, et le
     //    demarrage ne doit dependre d aucun reseau. L ecran de connexion
     //    s en charge au moment ou le bouton doit s afficher.
-    _google = ServiceGoogle(_api);
+    _configuration = ServiceConfiguration(_api);
+    _google = ServiceGoogle(_configuration);
     _session.google = _google;
 
     // Trois lectures locales, aucune bloquante : l'application s'ouvre tout de
@@ -93,6 +96,7 @@ class _ApplicationGarahState extends State<ApplicationGarah> {
       theme: _theme,
       tempsReel: _tempsReel,
       google: _google,
+      configuration: _configuration,
       child: ListenableBuilder(
         listenable: _theme,
         builder: (context, _) => MaterialApp(

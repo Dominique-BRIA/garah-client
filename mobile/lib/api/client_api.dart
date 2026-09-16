@@ -309,6 +309,80 @@ class ClientApi {
     return corps;
   }
 
+  /// « Continuer avec WhatsApp », étape 1 : demander le code.
+  ///
+  /// ⚠️ Le serveur répond **200 que le numéro ait un compte ou non**, et
+  /// renvoie la même chose dans les deux cas. Ne jamais interpréter cette
+  /// réponse comme « ce numéro est connu » : distinguer ferait de ce formulaire
+  /// un annuaire.
+  ///
+  /// @return le numéro normalisé et **masqué** — `+237 6•• •• •• 77` — à
+  ///         afficher pour confirmer où part le code, sans le révéler en entier
+  ///         à qui regarde l'écran par-dessus l'épaule.
+  Future<String> demanderUnCodeWhatsApp(String telephone) async {
+    http.Response reponse;
+    try {
+      reponse = await _http.post(
+        Uri.parse('$urlApi/api/auth/whatsapp/code'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'telephone': telephone}),
+      );
+    } catch (_) {
+      throw ErreurApi(0, 'Pas de connexion. Réessayez dans un instant.');
+    }
+
+    if (reponse.statusCode != 200) {
+      throw ErreurApi(reponse.statusCode, _messageDe(reponse));
+    }
+
+    final corps =
+        jsonDecode(utf8.decode(reponse.bodyBytes)) as Map<String, dynamic>;
+    return (corps['telephone'] as String?) ?? telephone;
+  }
+
+  /// « Continuer avec WhatsApp », étape 2 : vérifier le code.
+  ///
+  /// Le serveur renvoie **exactement** la même réponse et pose le **même**
+  /// cookie que `/api/auth/connexion` (D-36) : rien en aval ne sait par quelle
+  /// porte la session est entrée.
+  Future<Map<String, dynamic>> connecterAvecWhatsApp(
+    String telephone,
+    String code,
+  ) async {
+    http.Response reponse;
+    try {
+      reponse = await _http.post(
+        Uri.parse('$urlApi/api/auth/whatsapp/connexion'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'telephone': telephone, 'code': code}),
+      );
+    } catch (_) {
+      throw ErreurApi(0, 'Pas de connexion. Réessayez dans un instant.');
+    }
+
+    if (reponse.statusCode != 200) {
+      // ⚠️ On relaie le message du serveur, y compris sur un 401.
+      //
+      //    Contrairement au mot de passe, le sien est déjà le bon : « ce code
+      //    ne convient pas, ou il a expiré — demandez-en un nouveau » dit
+      //    exactement quoi faire, sans révéler laquelle des deux causes
+      //    s'applique.
+      throw ErreurApi(reponse.statusCode, _messageDe(reponse));
+    }
+
+    final corps =
+        jsonDecode(utf8.decode(reponse.bodyBytes)) as Map<String, dynamic>;
+    _jeton = corps[champJeton] as String?;
+    _lireLeCookie(reponse);
+    return corps;
+  }
+
   String? get jetonRafraichissement => _rafraichissement;
 
   /// Ce que le serveur a refusé, dit CHAMP PAR CHAMP.

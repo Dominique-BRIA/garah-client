@@ -5,6 +5,7 @@ import '../charte/jetons.dart';
 import '../charte/theme.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
+import 'connexion_whatsapp.dart';
 import 'inscription.dart';
 
 /// La connexion.
@@ -51,6 +52,13 @@ class _EcranConnexionState extends State<EcranConnexion> {
   /// du côté de celui qui propose.
   bool _googleDisponible = false;
 
+  /// Vrai quand Meta est configuré côté serveur.
+  ///
+  /// Même règle que Google : on n'affiche pas un bouton qui échouerait. La
+  /// vérification Meta Business prend des semaines — jusque-là, le bouton
+  /// n'existe pas, et l'application se comporte comme avant.
+  bool _whatsappDisponible = false;
+
   @override
   void initState() {
     super.initState();
@@ -67,9 +75,18 @@ class _EcranConnexionState extends State<EcranConnexion> {
   /// alors que la vitrine doit s'afficher hors connexion.
   Future<void> _preparerGoogle() async {
     if (!mounted) return;
-    final google = Services.de(context).google;
-    await google.preparer();
-    if (mounted) setState(() => _googleDisponible = google.disponible);
+    final services = Services.de(context);
+    await services.google.preparer();
+
+    // ⚠️ `charger()` ne relance rien : la configuration est lue une seule fois
+    //    et partagée. `preparer()` vient déjà de la demander.
+    await services.configuration.charger();
+
+    if (!mounted) return;
+    setState(() {
+      _googleDisponible = services.google.disponible;
+      _whatsappDisponible = services.configuration.whatsappDisponible;
+    });
   }
 
   @override
@@ -253,10 +270,9 @@ class _EcranConnexionState extends State<EcranConnexion> {
             child: Text(_envoi ? 'Connexion…' : 'Se connecter'),
           ),
 
-          // ⚠️ Le bloc entier disparaît quand Google n'est pas configuré.
-          //    Un bouton grisé ferait chercher ce qui manque du côté de
-          //    l'utilisateur, alors que le manque est côté serveur.
-          if (_googleDisponible) ...[
+          // ⚠️ Le séparateur apparaît dès qu'AU MOINS un bouton suit.
+          //    Affiché seul, il annoncerait un choix qui n'existe pas.
+          if (_googleDisponible || _whatsappDisponible) ...[
             const SizedBox(height: 18),
             Row(
               children: [
@@ -275,24 +291,61 @@ class _EcranConnexionState extends State<EcranConnexion> {
               ],
             ),
             const SizedBox(height: 18),
-            OutlinedButton.icon(
-              onPressed: !_envoi && !_envoiGoogle ? _continuerAvecGoogle : null,
-              icon: const Text(
-                'G',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  // Le bleu de Google. Une lettre plutôt qu'un logo : embarquer
-                  // l'image officielle ajoute un fichier à l'APK et impose des
-                  // règles d'usage de marque qu'on ne veut pas suivre de
-                  // travers.
-                  color: Color(0xFF4285F4),
+            if (_googleDisponible)
+              OutlinedButton.icon(
+                onPressed: !_envoi && !_envoiGoogle
+                    ? _continuerAvecGoogle
+                    : null,
+                icon: const Text(
+                  'G',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    // Le bleu de Google. Une lettre plutôt qu'un logo :
+                    // embarquer l'image officielle ajoute un fichier à l'APK et
+                    // impose des règles d'usage de marque qu'on ne veut pas
+                    // suivre de travers.
+                    color: Color(0xFF4285F4),
+                  ),
+                ),
+                label: Text(
+                  _envoiGoogle ? 'Connexion…' : 'Continuer avec Google',
                 ),
               ),
-              label: Text(
-                _envoiGoogle ? 'Connexion…' : 'Continuer avec Google',
+
+            if (_googleDisponible && _whatsappDisponible)
+              const SizedBox(height: 10),
+
+            // ⚠️ Ce bouton n'ouvre AUCUN SDK : il mène à un écran qui demande
+            //    un numéro. Meta n'expose aucune API de connexion — le nom
+            //    correspond à ce que la personne comprend, pas à ce qui se
+            //    passe (D-51).
+            if (_whatsappDisponible)
+              OutlinedButton.icon(
+                onPressed: _envoi || _envoiGoogle
+                    ? null
+                    : () async {
+                        final entre = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            builder: (_) => const EcranConnexionWhatsApp(),
+                          ),
+                        );
+                        // L'écran WhatsApp a ouvert la session : on ferme
+                        // celui-ci aussi, pour rendre la main là où la
+                        // personne avait cliqué « Se connecter ».
+                        if (entre == true && context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                icon: const Icon(
+                  Icons.chat_bubble_outline,
+                  size: 19,
+                  // Le vert de WhatsApp, pour la même raison que le G bleu.
+                  color: Color(0xFF25D366),
+                ),
+                label: const Text('Continuer avec WhatsApp'),
               ),
-            ),
+
             const SizedBox(height: 10),
             // 🎯 Dire ce qui va se passer AVANT le clic. Sans cette phrase,
             //    quelqu'un qui n'a pas de compte hésite à appuyer, croyant
