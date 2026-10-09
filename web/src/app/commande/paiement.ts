@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { montantLisible } from '../../modeles/catalogue';
@@ -9,11 +9,28 @@ interface EtatPaiement {
   readonly id: number;
   readonly statut: string;
   readonly montant: number;
-  readonly moyen: string;
+  /** Nul avec MoneyFusion tant que le client n'a pas choisi sur sa page (D-55). */
+  readonly moyen: string | null;
   readonly referenceTransaction: string | null;
+  /** MoneyFusion : la page où le client paie. Nul avec Campay. */
+  readonly urlPaiement?: string | null;
 }
 
 type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
+
+/** Le fournisseur des nouveaux paiements, annoncé par `/api/configuration` (D-55). */
+type Fournisseur = 'CAMPAY' | 'MONEYFUSION';
+
+/**
+ * Au retour de la page MoneyFusion, combien de fois on redemande l'état, et
+ * à quel intervalle.
+ *
+ * <p>MoneyFusion prévient GARAH par un webhook qui peut arriver après le
+ * client. Six essais espacés de cinq secondes couvrent une demi-minute ; au
+ * delà, le bouton « vérifier » prend le relais.</p>
+ */
+const ESSAIS_AU_RETOUR = 6;
+const INTERVALLE_RETOUR_MS = 5000;
 
 /**
  * Le paiement mobile.
@@ -43,16 +60,33 @@ type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
       <p class="gb-alerte marge" role="alert">{{ m }}</p>
     }
 
-    @if (!paiement()) {
+    @if (retourEnCours() && !paiement()) {
+      <!-- ⚠️ Retour de MoneyFusion, première vérification en vol : le
+           formulaire ne s'affiche PAS. Un clic sur « Payer » à ce moment
+           créerait un second paiement pour une commande peut-être déjà
+           réglée. -->
+      <p class="aide marge">Vérification de votre paiement…</p>
+    } @else if (!paiement()) {
       <!-- Choix du moyen, avant tout envoi. -->
       <section class="bloc">
-        <p class="gb-libelle">Moyen de paiement</p>
-        <div class="moyens">
-          <button type="button" class="moyen" [class.moyen--choisi]="moyen() === 'MTN_MOMO'"
-                  (click)="moyen.set('MTN_MOMO')">MTN MoMo</button>
-          <button type="button" class="moyen" [class.moyen--choisi]="moyen() === 'ORANGE_MONEY'"
-                  (click)="moyen.set('ORANGE_MONEY')">Orange Money</button>
-        </div>
+        @if (fournisseur() === 'MONEYFUSION') {
+          <!-- D-55 : le client choisit MTN ou Orange SUR LA PAGE MoneyFusion.
+               Lui proposer le choix ici le ferait choisir deux fois — et rien
+               ne l'empêcherait de choisir Orange ici puis MTN là-bas. -->
+          <p class="gb-libelle">Moyen de paiement</p>
+          <p class="aide-champ">
+            Vous choisirez MTN MoMo ou Orange Money sur la page de paiement
+            sécurisée MoneyFusion, puis vous reviendrez ici automatiquement.
+          </p>
+        } @else {
+          <p class="gb-libelle">Moyen de paiement</p>
+          <div class="moyens">
+            <button type="button" class="moyen" [class.moyen--choisi]="moyen() === 'MTN_MOMO'"
+                    (click)="moyen.set('MTN_MOMO')">MTN MoMo</button>
+            <button type="button" class="moyen" [class.moyen--choisi]="moyen() === 'ORANGE_MONEY'"
+                    (click)="moyen.set('ORANGE_MONEY')">Orange Money</button>
+          </div>
+        }
 
         <!-- ⚠️ LE NUMÉRO EST DEMANDÉ, ET IL DOIT L'ÊTRE.
              L'écran n'envoyait AUCUN numéro. Le serveur en exige un — c'est
@@ -70,7 +104,9 @@ type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
                [value]="telephone()" (input)="telephone.set($any($event.target).value)"
                [disabled]="envoi()" />
         <p class="aide-champ">
-          @if (moyen() === 'MTN_MOMO') {
+          @if (fournisseur() === 'MONEYFUSION') {
+            Votre numéro, pour que MoneyFusion vous identifie.
+          } @else if (moyen() === 'MTN_MOMO') {
             Ce numéro MTN recevra la demande de validation.
           } @else {
             Ce numéro Orange recevra la demande de validation.
@@ -79,10 +115,30 @@ type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
 
         <button type="button" class="gb-btn gb-btn--primaire gb-btn--plein"
                 [disabled]="envoi() || telephone().trim() === ''" (click)="lancer()">
-          @if (envoi()) { Envoi… } @else { Payer }
+          @if (envoi()) { Envoi… }
+          @else if (fournisseur() === 'MONEYFUSION') { Continuer vers le paiement }
+          @else { Payer }
         </button>
       </section>
     } @else if (paiement(); as p) {
+      @if (p.moyen === null) {
+        <!-- Retour de la page MoneyFusion : rien à valider sur le téléphone,
+             on attend la confirmation. -->
+        <section class="gb-carte attente">
+          <h2>Vérification de votre paiement</h2>
+          <p class="attente__texte">
+            Nous attendons la confirmation de MoneyFusion. Cela prend en général
+            quelques secondes.
+          </p>
+
+          <div class="attente__montant">
+            <span class="gb-attenue">Montant</span>
+            <span class="gb-montant">{{ montant(p.montant) }}</span>
+          </div>
+
+          <p class="attente__statut">En attente de confirmation</p>
+        </section>
+      } @else {
       <section class="gb-carte attente">
         <div class="attente__pastille" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
@@ -104,11 +160,14 @@ type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
 
         <p class="attente__statut">En attente de votre validation</p>
       </section>
+      }
 
       <div class="bloc">
         <button type="button" class="gb-btn gb-btn--secondaire gb-btn--plein"
                 [disabled]="verification()" (click)="verifier()">
-          @if (verification()) { Vérification… } @else { J’ai validé — vérifier }
+          @if (verification()) { Vérification… }
+          @else if (p.moyen === null) { Vérifier maintenant }
+          @else { J’ai validé — vérifier }
         </button>
         <p class="aide">La confirmation peut prendre quelques secondes.</p>
       </div>
@@ -216,12 +275,29 @@ type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
     .secours__texte { margin: 0; font-size: 0.8rem; color: var(--texte-attenue); line-height: 1.55; }
   `,
 })
-export class Paiement {
+export class Paiement implements OnInit {
   private readonly http = inject(HttpClient);
 
   readonly id = input.required<string>();
 
+  /**
+   * `?paiement=41` : posé par la page MoneyFusion quand elle renvoie le
+   * client ici (D-55). Lié depuis la route par `withComponentInputBinding()`.
+   *
+   * <p>⚠️ La page est rechargée de zéro au retour : sans cet identifiant,
+   * l'écran ne saurait pas quel paiement vérifier.</p>
+   */
+  readonly paiementRetour = input<string | undefined>(undefined, { alias: 'paiement' });
+
   protected readonly moyen = signal<Moyen>('MTN_MOMO');
+
+  /**
+   * Nul tant que `/api/configuration` n'a pas répondu — et alors l'écran se
+   * comporte comme avec Campay. Ce n'est pas grave : c'est la RÉPONSE du
+   * serveur qui décide de la suite, pas ce signal. Avec MoneyFusion actif, le
+   * moyen envoyé est ignoré et une page de paiement revient quand même.
+   */
+  protected readonly fournisseur = signal<Fournisseur | null>(null);
 
   /** Le numero qui recevra la demande de validation. */
   protected readonly telephone = signal('');
@@ -231,8 +307,100 @@ export class Paiement {
   protected readonly verification = signal(false);
   protected readonly erreur = signal<string | null>(null);
 
+  /** Vrai entre l'arrivée depuis MoneyFusion et la première réponse. */
+  protected readonly retourEnCours = signal(false);
+
+  private minuterie: ReturnType<typeof setTimeout> | null = null;
+
   constructor() {
     this.prefillerLeNumero();
+    this.lireLeFournisseur();
+    inject(DestroyRef).onDestroy(() => this.arreterLaMinuterie());
+  }
+
+  ngOnInit(): void {
+    const retour = Number(this.paiementRetour());
+    if (Number.isInteger(retour) && retour > 0) {
+      this.retourEnCours.set(true);
+      this.verifierAuRetour(retour, ESSAIS_AU_RETOUR);
+    }
+  }
+
+  /** Muet en cas d'échec, pour la même raison que le pré-remplissage. */
+  private lireLeFournisseur(): void {
+    this.http.get<{ fournisseurPaiement?: string }>('/api/configuration').subscribe({
+      next: (c) => {
+        if (c.fournisseurPaiement === 'MONEYFUSION' || c.fournisseurPaiement === 'CAMPAY') {
+          this.fournisseur.set(c.fournisseurPaiement);
+        }
+      },
+      error: () => {
+        // Voir la doc du signal : l'écran retombe sur le parcours Campay, et
+        // la réponse du serveur corrige s'il le faut.
+      },
+    });
+  }
+
+  /**
+   * Le client revient de la page MoneyFusion : on redemande l'état, plusieurs
+   * fois, parce que le webhook peut arriver APRÈS lui.
+   *
+   * <p>🎯 Jamais de succès optimiste, même ici : que MoneyFusion l'ait
+   * renvoyé vers l'adresse de retour ne prouve rien. Une page de retour
+   * s'ouvre aussi après une annulation.</p>
+   */
+  private verifierAuRetour(paiementId: number, essaisRestants: number): void {
+    this.verification.set(true);
+    this.http.post<EtatPaiement>(`/api/paiements/${paiementId}/verification`, {}).subscribe({
+      next: (maj) => {
+        this.verification.set(false);
+        const tranche = this.traiterLEtat(maj);
+        this.retourEnCours.set(false);
+        if (tranche) {
+          return;
+        }
+        if (essaisRestants > 1) {
+          this.minuterie = setTimeout(
+            () => this.verifierAuRetour(paiementId, essaisRestants - 1),
+            INTERVALLE_RETOUR_MS,
+          );
+        }
+      },
+      error: (e: unknown) => {
+        this.verification.set(false);
+        this.retourEnCours.set(false);
+        this.erreur.set(messageErreur(e, 'Le paiement n’a pas pu être vérifié.'));
+      },
+    });
+  }
+
+  /**
+   * Applique un état lu sur le serveur.
+   *
+   * @returns vrai si le paiement est tranché — confirmé ou échoué
+   */
+  private traiterLEtat(maj: EtatPaiement): boolean {
+    if (maj.statut === 'CONFIRME') {
+      // Confirmé pour de bon, par le serveur — jamais deviné ici.
+      window.location.href = '/mes-commandes';
+      return true;
+    }
+    if (maj.statut === 'ECHOUE' || maj.statut === 'ANNULE') {
+      // ⚠️ On revient au formulaire : la commande attend toujours son
+      //    paiement, et le client doit pouvoir relancer sans chercher où.
+      this.paiement.set(null);
+      this.erreur.set('Le paiement n’a pas abouti. Votre commande est conservée : vous pouvez réessayer.');
+      return true;
+    }
+    this.paiement.set(maj);
+    return false;
+  }
+
+  private arreterLaMinuterie(): void {
+    if (this.minuterie !== null) {
+      clearTimeout(this.minuterie);
+      this.minuterie = null;
+    }
   }
 
   /**
@@ -276,6 +444,13 @@ export class Paiement {
       })
       .subscribe({
         next: (p) => {
+          if (p.urlPaiement) {
+            // MoneyFusion : le client paie sur leur page, qui le renverra ici
+            // avec ?paiement=… . On garde le bouton désactivé pendant le
+            // départ, sinon un second clic créerait un second paiement.
+            window.location.assign(p.urlPaiement);
+            return;
+          }
           this.envoi.set(false);
           this.paiement.set(p);
         },
@@ -298,18 +473,14 @@ export class Paiement {
     if (!p || this.verification()) {
       return;
     }
+    this.arreterLaMinuterie();
     this.verification.set(true);
     this.erreur.set(null);
 
     this.http.post<EtatPaiement>(`/api/paiements/${p.id}/verification`, {}).subscribe({
       next: (maj) => {
         this.verification.set(false);
-        this.paiement.set(maj);
-
-        if (maj.statut === 'CONFIRME') {
-          // Confirmé pour de bon, par le serveur — jamais deviné ici.
-          window.location.href = '/mes-commandes';
-        }
+        this.traiterLEtat(maj);
       },
       error: (e: unknown) => {
         this.verification.set(false);
