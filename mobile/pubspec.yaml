@@ -39,6 +39,15 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_sign_in: ^7.2.0
 
+  # La page de paiement MoneyFusion (D-55), ouverte DANS l'application.
+  #
+  # ⚠️ Pourquoi pas le navigateur du téléphone, plus léger : l'application
+  #    doit savoir quand le client a fini. Dans une page intégrée, elle voit
+  #    passer l'adresse de retour et referme la page d'elle-même ; dans un
+  #    navigateur externe, le client doit revenir seul, et beaucoup restent
+  #    sur la page de confirmation de MoneyFusion.
+  webview_flutter: ^4.14.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -6,6 +6,7 @@ import '../charte/theme.dart';
 import '../modeles/catalogue.dart';
 import '../services/services.dart';
 import '../widgets/communs.dart';
+import 'page_de_paiement.dart';
 
 class _EtatPaiement {
   const _EtatPaiement({
@@ -13,13 +14,28 @@ class _EtatPaiement {
     required this.statut,
     required this.montant,
     required this.referenceTransaction,
+    this.moyen,
     this.codeUssd,
+    this.urlPaiement,
+    this.urlRetour,
   });
 
   final int id;
   final String statut;
   final num montant;
   final String? referenceTransaction;
+
+  /// `MTN_MOMO` ou `ORANGE_MONEY`. Nul avec MoneyFusion tant que le client
+  /// ne l'a pas choisi sur la page de paiement (D-55).
+  final String? moyen;
+
+  /// MoneyFusion : la page où le client paie. Nulle avec Campay, et en
+  /// dehors de la demande initiale.
+  final String? urlPaiement;
+
+  /// MoneyFusion : l'adresse vers laquelle la page renvoie le client. La
+  /// page intégrée la guette pour se refermer.
+  final String? urlRetour;
 
   /// Le code à composer si la demande n'arrive pas d'elle-même.
   ///
@@ -32,7 +48,10 @@ class _EtatPaiement {
     statut: (j['statut'] as String?) ?? '',
     montant: (j['montant'] as num?) ?? 0,
     referenceTransaction: j['referenceTransaction'] as String?,
+    moyen: j['moyen'] as String?,
     codeUssd: j['codeUssd'] as String?,
+    urlPaiement: j['urlPaiement'] as String?,
+    urlRetour: j['urlRetour'] as String?,
   );
 
   bool get confirme => statut == 'CONFIRME';
@@ -59,6 +78,12 @@ class _EtatPaiement {
 /// Redemander toutes les deux secondes viderait la batterie et le forfait
 /// pendant qu'on cherche son téléphone pour valider. C'est le client qui
 /// appuie, quand il a fini — lui seul sait quand il a fini.
+///
+/// **Une exception bornée : le retour de la page MoneyFusion (D-55).** Là, on
+/// SAIT que le client a fini — il vient de quitter la page. Mais le webhook
+/// de MoneyFusion peut arriver après lui. On redemande donc l'état au plus six
+/// fois, toutes les cinq secondes, puis le bouton prend le relais. Une
+/// demi-minute, une fois, sur un événement certain : pas une boucle.
 class EcranPaiement extends StatefulWidget {
   const EcranPaiement({super.key, required this.commandeId});
 
@@ -76,8 +101,21 @@ class _EcranPaiementState extends State<EcranPaiement> {
     ('ORANGE_MONEY', 'Orange Money'),
   ];
 
+  static const _essaisAuRetour = 6;
+  static const _intervalleAuRetour = Duration(seconds: 5);
+
   String _moyen = 'MTN_MOMO';
   _EtatPaiement? _paiement;
+
+  /// Avant le clic : faut-il proposer MTN / Orange ? Voir
+  /// `ServiceConfiguration.paiementParMoneyFusion`.
+  bool _parMoneyFusion = false;
+
+  /// La page MoneyFusion et son adresse de retour, gardées de la réponse
+  /// initiale : les relectures d'état ne les renvoient pas, et le client doit
+  /// pouvoir rouvrir une page fermée par erreur.
+  String? _urlPaiement;
+  String? _urlRetour;
 
   /// Le numéro qui recevra la demande de validation.
   final _telephone = TextEditingController();
@@ -94,6 +132,15 @@ class _EcranPaiementState extends State<EcranPaiement> {
     if (_numeroDemande) return;
     _numeroDemande = true;
     _prefillerLeNumero();
+    _lireLeFournisseur();
+  }
+
+  /// Lu une seule fois pour toute l'application, et sans jamais lever.
+  Future<void> _lireLeFournisseur() async {
+    final configuration = Services.de(context).configuration;
+    await configuration.charger();
+    if (!mounted) return;
+    setState(() => _parMoneyFusion = configuration.paiementParMoneyFusion);
   }
 
   @override
@@ -152,7 +199,15 @@ class _EcranPaiementState extends State<EcranPaiement> {
       setState(() {
         _envoi = false;
         _paiement = p;
+        if (p.urlPaiement != null) {
+          _urlPaiement = p.urlPaiement;
+          _urlRetour = p.urlRetour;
+        }
       });
+      // C'est la RÉPONSE qui décide, pas la configuration lue avant le clic.
+      if (p.urlPaiement != null) {
+        await _ouvrirLaPage();
+      }
     } on ErreurApi catch (e) {
       if (!mounted) return;
       setState(() {
@@ -175,6 +230,34 @@ class _EcranPaiementState extends State<EcranPaiement> {
         _envoi = false;
         _erreur = 'Une erreur inattendue est survenue. Reessayez.';
       });
+    }
+  }
+
+  /// Ouvre la page MoneyFusion, puis vérifie au retour (D-55).
+  ///
+  /// Qu'elle se referme sur l'adresse de retour ou que le client la ferme
+  /// lui-même, on vérifie : dans les deux cas il a peut-être payé.
+  Future<void> _ouvrirLaPage() async {
+    final url = _urlPaiement;
+    if (url == null) return;
+
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => EcranPageDePaiement(url: url, urlRetour: _urlRetour),
+      ),
+    );
+    if (!mounted) return;
+
+    for (var essai = 0; essai < _essaisAuRetour; essai++) {
+      if (essai > 0) {
+        await Future<void>.delayed(_intervalleAuRetour);
+        if (!mounted) return;
+      }
+      // Tranché, ou le client a appuyé sur « Réessayer » entre-temps : on
+      // s'arrête, sans quoi on relirait un paiement abandonné.
+      if (_paiement?.enAttente != true) return;
+      await _verifier();
+      if (!mounted || _paiement?.enAttente != true) return;
     }
   }
 
@@ -276,47 +359,61 @@ class _EcranPaiementState extends State<EcranPaiement> {
   List<Widget> _avantLeLancement(BuildContext context) => [
     const Libelle('Comment payer'),
     const SizedBox(height: 10),
-    for (final (code, libelle) in _moyens)
-      Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: code == _moyen
-              ? Jetons.primaire.withValues(alpha: 0.07)
-              : null,
-          border: Border.all(
-            color: code == _moyen ? Jetons.primaire : context.bordure,
-          ),
-          borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+    // D-55 : avec MoneyFusion, le client choisit MTN ou Orange SUR SA PAGE.
+    // Le lui demander ici le ferait choisir deux fois — et rien ne
+    // l'empêcherait de choisir Orange ici puis MTN là-bas.
+    if (_parMoneyFusion)
+      Text(
+        'Vous choisirez MTN Mobile Money ou Orange Money sur la page de '
+        'paiement sécurisée MoneyFusion, qui s’ouvrira dans l’application.',
+        style: TextStyle(
+          fontSize: 13.5,
+          height: 1.5,
+          color: context.texteAttenue,
         ),
-        child: InkWell(
-          onTap: () => setState(() => _moyen = code),
-          borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Icon(
-                  code == _moyen
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  color: code == _moyen
-                      ? Jetons.primaire
-                      : context.texteAttenue,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  libelle,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
+      ),
+    if (!_parMoneyFusion)
+      for (final (code, libelle) in _moyens)
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: code == _moyen
+                ? Jetons.primaire.withValues(alpha: 0.07)
+                : null,
+            border: Border.all(
+              color: code == _moyen ? Jetons.primaire : context.bordure,
+            ),
+            borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+          ),
+          child: InkWell(
+            onTap: () => setState(() => _moyen = code),
+            borderRadius: BorderRadius.circular(Jetons.rayonMoyen),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Icon(
+                    code == _moyen
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: code == _moyen
+                        ? Jetons.primaire
+                        : context.texteAttenue,
+                    size: 20,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Text(
+                    libelle,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
     const SizedBox(height: 16),
     // ⚠️ LE NUMÉRO EST DEMANDÉ, ET IL DOIT L'ÊTRE.
     //
@@ -349,7 +446,9 @@ class _EcranPaiementState extends State<EcranPaiement> {
     ),
     const SizedBox(height: 8),
     Text(
-      _moyen == 'MTN_MOMO'
+      _parMoneyFusion
+          ? 'Votre numéro, pour que MoneyFusion vous identifie.'
+          : _moyen == 'MTN_MOMO'
           ? 'Ce numéro MTN recevra la demande de validation.'
           : 'Ce numéro Orange recevra la demande de validation.',
       style: TextStyle(
@@ -365,7 +464,13 @@ class _EcranPaiementState extends State<EcranPaiement> {
       //    apprendre ce qu'on savait avant de l'envoyer, sur un forfait
       //    compté, n'est pas gratuit.
       onPressed: _envoi || _telephone.text.trim().isEmpty ? null : _lancer,
-      child: Text(_envoi ? 'Envoi…' : 'Lancer le paiement'),
+      child: Text(
+        _envoi
+            ? 'Envoi…'
+            : _parMoneyFusion
+            ? 'Continuer vers le paiement'
+            : 'Lancer le paiement',
+      ),
     ),
   ];
 
@@ -410,6 +515,53 @@ class _EcranPaiementState extends State<EcranPaiement> {
             _erreur = null;
           }),
           child: const Text('Réessayer'),
+        ),
+      ];
+    }
+
+    // D-55 : retour de la page MoneyFusion. Rien à valider sur le téléphone,
+    // on attend la confirmation. Le moyen est nul tant que MoneyFusion ne
+    // l'a pas confirmé — c'est ce qui distingue ce cas de Campay.
+    if (p.moyen == null && (p.codeUssd == null || p.codeUssd!.isEmpty)) {
+      return [
+        _bandeau(
+          context,
+          couleur: Jetons.alerte,
+          icone: Icons.hourglass_top_outlined,
+          titre: 'Vérification de votre paiement',
+          texte:
+              'Nous attendons la confirmation de MoneyFusion. Cela prend en '
+              'général quelques secondes. Le montant est de '
+              '${montantLisible(p.montant)}.',
+        ),
+        const SizedBox(height: 18),
+        FilledButton(
+          onPressed: _verification ? null : _verifier,
+          child: Text(_verification ? 'Vérification…' : 'Vérifier maintenant'),
+        ),
+        // Le client a pu fermer la page par erreur, avant d'avoir payé.
+        if (_urlPaiement != null) ...[
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: _verification ? null : _ouvrirLaPage,
+            child: const Text('Rouvrir la page de paiement'),
+          ),
+        ],
+        const SizedBox(height: 20),
+        Text(
+          'Si rien ne se passe, ne recommencez pas la commande : elle reste '
+          'enregistrée et vous la retrouverez dans « Mon compte », prête à '
+          'être payée.',
+          style: TextStyle(
+            fontSize: 12.5,
+            height: 1.5,
+            color: context.texteAttenue,
+          ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton(
+          onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+          child: const Text('Revenir à la boutique'),
         ),
       ];
     }

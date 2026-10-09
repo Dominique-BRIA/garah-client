@@ -36,6 +36,16 @@ class ServiceConfiguration {
   /// « Continuer avec WhatsApp » peut-il être proposé ?
   bool get whatsappDisponible => _annonce?['whatsappDisponible'] == true;
 
+  /// Le paiement passe-t-il par la page MoneyFusion (D-55) ?
+  ///
+  /// Sert seulement AVANT le clic, à ne pas proposer MTN / Orange : le client
+  /// les choisit sur la page MoneyFusion. Après le clic, c'est la réponse du
+  /// serveur qui décide — une `urlPaiement` revient, ou pas. Faux si la
+  /// configuration n'a pas pu être lue : l'écran retombe sur le parcours
+  /// Campay, et la réponse corrige s'il le faut.
+  bool get paiementParMoneyFusion =>
+      _annonce?['fournisseurPaiement'] == 'MONEYFUSION';
+
   /// Les fournisseurs réellement configurés côté serveur.
   ///
   /// 🎯 L'écran n'affiche que ce qui est là. Un bouton dont la configuration
