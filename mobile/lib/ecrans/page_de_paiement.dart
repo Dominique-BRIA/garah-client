@@ -3,11 +3,11 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../widgets/communs.dart';
 
-/// La page de paiement MoneyFusion, ouverte dans l'application (D-55).
+/// La page de paiement du fournisseur (MoneyFusion, GeniusPay), ouverte dans l'application (D-55).
 ///
 /// Le client y choisit MTN ou Orange, saisit son numéro et valide. GARAH ne
 /// voit rien de ce qui s'y passe : il guette seulement l'**adresse de retour**,
-/// vers laquelle MoneyFusion renvoie le client une fois fini.
+/// vers laquelle le fournisseur renvoie le client une fois fini.
 ///
 /// Se referme en rendant `true` quand l'adresse de retour est atteinte,
 /// `false` (ou `null`) quand le client la ferme lui-même. Dans les deux cas,
@@ -15,13 +15,13 @@ import '../widgets/communs.dart';
 ///
 /// ## 🎯 Atteindre l'adresse de retour ne prouve RIEN
 ///
-/// MoneyFusion y renvoie aussi après une annulation. Ce retour dit seulement
+/// Le fournisseur y renvoie aussi après une annulation. Ce retour dit seulement
 /// « le client a fini sur la page » ; seul le serveur dit si le paiement est
 /// passé.
 class EcranPageDePaiement extends StatefulWidget {
   const EcranPageDePaiement({super.key, required this.url, this.urlRetour});
 
-  /// La page MoneyFusion, telle que le serveur l'a reçue.
+  /// La page de paiement, telle que le serveur l'a reçue.
   final String url;
 
   /// L'adresse de retour fabriquée par le serveur. Nulle : on attend que le
@@ -43,7 +43,7 @@ class _EcranPageDePaiementState extends State<EcranPageDePaiement> {
   void initState() {
     super.initState();
     _controleur = WebViewController()
-      // La page MoneyFusion ne fonctionne pas sans JavaScript.
+      // La page de paiement ne fonctionne pas sans JavaScript.
       //
       // ⚠️ Aucun canal JavaScript n'est ouvert vers l'application : la page
       //    ne peut rien appeler chez nous. Elle s'affiche, c'est tout.
@@ -95,7 +95,7 @@ class _EcranPageDePaiementState extends State<EcranPageDePaiement> {
 
   /// L'adresse demandée est-elle celle du retour ?
   ///
-  /// ⚠️ On compare l'hôte et le chemin, PAS l'adresse entière : MoneyFusion
+  /// ⚠️ On compare l'hôte et le chemin, PAS l'adresse entière : le fournisseur
   ///    peut ajouter ses propres paramètres à la fin. Une comparaison exacte
   ///    ne reconnaîtrait jamais le retour, et le client resterait sur une
   ///    page blanche de la boutique web.

@@ -79,7 +79,7 @@ class _EtatPaiement {
 /// pendant qu'on cherche son téléphone pour valider. C'est le client qui
 /// appuie, quand il a fini — lui seul sait quand il a fini.
 ///
-/// **Une exception bornée : le retour de la page MoneyFusion (D-55).** Là, on
+/// **Une exception bornée : le retour de la page de paiement (D-55).** Là, on
 /// SAIT que le client a fini — il vient de quitter la page. Mais le webhook
 /// de MoneyFusion peut arriver après lui. On redemande donc l'état au plus six
 /// fois, toutes les cinq secondes, puis le bouton prend le relais. Une
@@ -108,8 +108,8 @@ class _EcranPaiementState extends State<EcranPaiement> {
   _EtatPaiement? _paiement;
 
   /// Avant le clic : faut-il proposer MTN / Orange ? Voir
-  /// `ServiceConfiguration.paiementParMoneyFusion`.
-  bool _parMoneyFusion = false;
+  /// `ServiceConfiguration.paiementParPage`.
+  bool _parPage = false;
 
   /// La page MoneyFusion et son adresse de retour, gardées de la réponse
   /// initiale : les relectures d'état ne les renvoient pas, et le client doit
@@ -140,7 +140,7 @@ class _EcranPaiementState extends State<EcranPaiement> {
     final configuration = Services.de(context).configuration;
     await configuration.charger();
     if (!mounted) return;
-    setState(() => _parMoneyFusion = configuration.paiementParMoneyFusion);
+    setState(() => _parPage = configuration.paiementParPage);
   }
 
   @override
@@ -233,7 +233,7 @@ class _EcranPaiementState extends State<EcranPaiement> {
     }
   }
 
-  /// Ouvre la page MoneyFusion, puis vérifie au retour (D-55).
+  /// Ouvre la page de paiement, puis vérifie au retour (D-55).
   ///
   /// Qu'elle se referme sur l'adresse de retour ou que le client la ferme
   /// lui-même, on vérifie : dans les deux cas il a peut-être payé.
@@ -359,20 +359,20 @@ class _EcranPaiementState extends State<EcranPaiement> {
   List<Widget> _avantLeLancement(BuildContext context) => [
     const Libelle('Comment payer'),
     const SizedBox(height: 10),
-    // D-55 : avec MoneyFusion, le client choisit MTN ou Orange SUR SA PAGE.
+    // D-55 : avec un paiement par page, le client choisit MTN ou Orange SUR SA PAGE.
     // Le lui demander ici le ferait choisir deux fois — et rien ne
     // l'empêcherait de choisir Orange ici puis MTN là-bas.
-    if (_parMoneyFusion)
+    if (_parPage)
       Text(
         'Vous choisirez MTN Mobile Money ou Orange Money sur la page de '
-        'paiement sécurisée MoneyFusion, qui s’ouvrira dans l’application.',
+        'paiement sécurisée, qui s’ouvrira dans l’application.',
         style: TextStyle(
           fontSize: 13.5,
           height: 1.5,
           color: context.texteAttenue,
         ),
       ),
-    if (!_parMoneyFusion)
+    if (!_parPage)
       for (final (code, libelle) in _moyens)
         Container(
           margin: const EdgeInsets.only(bottom: 10),
@@ -446,8 +446,8 @@ class _EcranPaiementState extends State<EcranPaiement> {
     ),
     const SizedBox(height: 8),
     Text(
-      _parMoneyFusion
-          ? 'Votre numéro, pour que MoneyFusion vous identifie.'
+      _parPage
+          ? 'Votre numéro, pour vous identifier sur la page de paiement.'
           : _moyen == 'MTN_MOMO'
           ? 'Ce numéro MTN recevra la demande de validation.'
           : 'Ce numéro Orange recevra la demande de validation.',
@@ -467,7 +467,7 @@ class _EcranPaiementState extends State<EcranPaiement> {
       child: Text(
         _envoi
             ? 'Envoi…'
-            : _parMoneyFusion
+            : _parPage
             ? 'Continuer vers le paiement'
             : 'Lancer le paiement',
       ),
@@ -519,7 +519,7 @@ class _EcranPaiementState extends State<EcranPaiement> {
       ];
     }
 
-    // D-55 : retour de la page MoneyFusion. Rien à valider sur le téléphone,
+    // D-55 : retour de la page de paiement. Rien à valider sur le téléphone,
     // on attend la confirmation. Le moyen est nul tant que MoneyFusion ne
     // l'a pas confirmé — c'est ce qui distingue ce cas de Campay.
     if (p.moyen == null && (p.codeUssd == null || p.codeUssd!.isEmpty)) {
@@ -530,7 +530,7 @@ class _EcranPaiementState extends State<EcranPaiement> {
           icone: Icons.hourglass_top_outlined,
           titre: 'Vérification de votre paiement',
           texte:
-              'Nous attendons la confirmation de MoneyFusion. Cela prend en '
+              'Nous attendons la confirmation du paiement. Cela prend en '
               'général quelques secondes. Le montant est de '
               '${montantLisible(p.montant)}.',
         ),

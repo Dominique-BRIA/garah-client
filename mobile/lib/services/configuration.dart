@@ -36,15 +36,21 @@ class ServiceConfiguration {
   /// « Continuer avec WhatsApp » peut-il être proposé ?
   bool get whatsappDisponible => _annonce?['whatsappDisponible'] == true;
 
-  /// Le paiement passe-t-il par la page MoneyFusion (D-55) ?
+  /// Le paiement passe-t-il par une page de paiement (MoneyFusion, GeniusPay) ?
   ///
   /// Sert seulement AVANT le clic, à ne pas proposer MTN / Orange : le client
-  /// les choisit sur la page MoneyFusion. Après le clic, c'est la réponse du
+  /// les choisit sur la page de paiement. Après le clic, c'est la réponse du
   /// serveur qui décide — une `urlPaiement` revient, ou pas. Faux si la
   /// configuration n'a pas pu être lue : l'écran retombe sur le parcours
   /// Campay, et la réponse corrige s'il le faut.
-  bool get paiementParMoneyFusion =>
-      _annonce?['fournisseurPaiement'] == 'MONEYFUSION';
+  ///
+  /// ⚠️ « Tout sauf Campay », et non une liste : un fournisseur ajouté côté
+  /// serveur (GeniusPay, D-56) doit afficher le bon écran SANS nouvelle
+  /// version de l'application — un APK installé ne se met pas à jour seul.
+  bool get paiementParPage {
+    final f = _annonce?['fournisseurPaiement'];
+    return f is String && f.isNotEmpty && f != 'CAMPAY';
+  }
 
   /// Les fournisseurs réellement configurés côté serveur.
   ///

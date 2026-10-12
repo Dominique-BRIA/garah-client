@@ -9,23 +9,24 @@ interface EtatPaiement {
   readonly id: number;
   readonly statut: string;
   readonly montant: number;
-  /** Nul avec MoneyFusion tant que le client n'a pas choisi sur sa page (D-55). */
+  /** Nul avec un paiement par page (MoneyFusion, GeniusPay) tant que le client n'a pas choisi sur sa page (D-55). */
   readonly moyen: string | null;
   readonly referenceTransaction: string | null;
-  /** MoneyFusion : la page où le client paie. Nul avec Campay. */
+  /** Paiement par page : la page où le client paie. Nul avec Campay. */
   readonly urlPaiement?: string | null;
 }
 
 type Moyen = 'MTN_MOMO' | 'ORANGE_MONEY';
 
 /** Le fournisseur des nouveaux paiements, annoncé par `/api/configuration` (D-55). */
-type Fournisseur = 'CAMPAY' | 'MONEYFUSION';
+// Une chaîne libre, pas une liste : voir parPage().
+type Fournisseur = string;
 
 /**
- * Au retour de la page MoneyFusion, combien de fois on redemande l'état, et
+ * Au retour de la page de paiement, combien de fois on redemande l'état, et
  * à quel intervalle.
  *
- * <p>MoneyFusion prévient GARAH par un webhook qui peut arriver après le
+ * <p>Le fournisseur prévient GARAH par un webhook qui peut arriver après le
  * client. Six essais espacés de cinq secondes couvrent une demi-minute ; au
  * delà, le bouton « vérifier » prend le relais.</p>
  */
@@ -61,7 +62,7 @@ const INTERVALLE_RETOUR_MS = 5000;
     }
 
     @if (retourEnCours() && !paiement()) {
-      <!-- ⚠️ Retour de MoneyFusion, première vérification en vol : le
+      <!-- ⚠️ Retour de la page de paiement, première vérification en vol : le
            formulaire ne s'affiche PAS. Un clic sur « Payer » à ce moment
            créerait un second paiement pour une commande peut-être déjà
            réglée. -->
@@ -69,14 +70,14 @@ const INTERVALLE_RETOUR_MS = 5000;
     } @else if (!paiement()) {
       <!-- Choix du moyen, avant tout envoi. -->
       <section class="bloc">
-        @if (fournisseur() === 'MONEYFUSION') {
-          <!-- D-55 : le client choisit MTN ou Orange SUR LA PAGE MoneyFusion.
+        @if (parPage()) {
+          <!-- D-55 : le client choisit MTN ou Orange SUR LA PAGE DE PAIEMENT.
                Lui proposer le choix ici le ferait choisir deux fois — et rien
                ne l'empêcherait de choisir Orange ici puis MTN là-bas. -->
           <p class="gb-libelle">Moyen de paiement</p>
           <p class="aide-champ">
             Vous choisirez MTN MoMo ou Orange Money sur la page de paiement
-            sécurisée MoneyFusion, puis vous reviendrez ici automatiquement.
+            sécurisée, puis vous reviendrez ici automatiquement.
           </p>
         } @else {
           <p class="gb-libelle">Moyen de paiement</p>
@@ -104,8 +105,8 @@ const INTERVALLE_RETOUR_MS = 5000;
                [value]="telephone()" (input)="telephone.set($any($event.target).value)"
                [disabled]="envoi()" />
         <p class="aide-champ">
-          @if (fournisseur() === 'MONEYFUSION') {
-            Votre numéro, pour que MoneyFusion vous identifie.
+          @if (parPage()) {
+            Votre numéro, pour vous identifier sur la page de paiement.
           } @else if (moyen() === 'MTN_MOMO') {
             Ce numéro MTN recevra la demande de validation.
           } @else {
@@ -116,18 +117,18 @@ const INTERVALLE_RETOUR_MS = 5000;
         <button type="button" class="gb-btn gb-btn--primaire gb-btn--plein"
                 [disabled]="envoi() || telephone().trim() === ''" (click)="lancer()">
           @if (envoi()) { Envoi… }
-          @else if (fournisseur() === 'MONEYFUSION') { Continuer vers le paiement }
+          @else if (parPage()) { Continuer vers le paiement }
           @else { Payer }
         </button>
       </section>
     } @else if (paiement(); as p) {
       @if (p.moyen === null) {
-        <!-- Retour de la page MoneyFusion : rien à valider sur le téléphone,
+        <!-- Retour de la page de paiement : rien à valider sur le téléphone,
              on attend la confirmation. -->
         <section class="gb-carte attente">
           <h2>Vérification de votre paiement</h2>
           <p class="attente__texte">
-            Nous attendons la confirmation de MoneyFusion. Cela prend en général
+            Nous attendons la confirmation du paiement. Cela prend en général
             quelques secondes.
           </p>
 
@@ -281,7 +282,7 @@ export class Paiement implements OnInit {
   readonly id = input.required<string>();
 
   /**
-   * `?paiement=41` : posé par la page MoneyFusion quand elle renvoie le
+   * `?paiement=41` : posé par la page de paiement quand elle renvoie le
    * client ici (D-55). Lié depuis la route par `withComponentInputBinding()`.
    *
    * <p>⚠️ La page est rechargée de zéro au retour : sans cet identifiant,
@@ -294,7 +295,7 @@ export class Paiement implements OnInit {
   /**
    * Nul tant que `/api/configuration` n'a pas répondu — et alors l'écran se
    * comporte comme avec Campay. Ce n'est pas grave : c'est la RÉPONSE du
-   * serveur qui décide de la suite, pas ce signal. Avec MoneyFusion actif, le
+   * serveur qui décide de la suite, pas ce signal. Avec un paiement par page, le
    * moyen envoyé est ignoré et une page de paiement revient quand même.
    */
   protected readonly fournisseur = signal<Fournisseur | null>(null);
@@ -307,7 +308,7 @@ export class Paiement implements OnInit {
   protected readonly verification = signal(false);
   protected readonly erreur = signal<string | null>(null);
 
-  /** Vrai entre l'arrivée depuis MoneyFusion et la première réponse. */
+  /** Vrai entre l'arrivée depuis la page de paiement et la première réponse. */
   protected readonly retourEnCours = signal(false);
 
   private minuterie: ReturnType<typeof setTimeout> | null = null;
@@ -330,7 +331,7 @@ export class Paiement implements OnInit {
   private lireLeFournisseur(): void {
     this.http.get<{ fournisseurPaiement?: string }>('/api/configuration').subscribe({
       next: (c) => {
-        if (c.fournisseurPaiement === 'MONEYFUSION' || c.fournisseurPaiement === 'CAMPAY') {
+        if (typeof c.fournisseurPaiement === 'string' && c.fournisseurPaiement !== '') {
           this.fournisseur.set(c.fournisseurPaiement);
         }
       },
@@ -342,10 +343,10 @@ export class Paiement implements OnInit {
   }
 
   /**
-   * Le client revient de la page MoneyFusion : on redemande l'état, plusieurs
+   * Le client revient de la page de paiement : on redemande l'état, plusieurs
    * fois, parce que le webhook peut arriver APRÈS lui.
    *
-   * <p>🎯 Jamais de succès optimiste, même ici : que MoneyFusion l'ait
+   * <p>🎯 Jamais de succès optimiste, même ici : que la page l'ait
    * renvoyé vers l'adresse de retour ne prouve rien. Une page de retour
    * s'ouvre aussi après une annulation.</p>
    */
@@ -445,7 +446,7 @@ export class Paiement implements OnInit {
       .subscribe({
         next: (p) => {
           if (p.urlPaiement) {
-            // MoneyFusion : le client paie sur leur page, qui le renverra ici
+            // Paiement par page : le client paie sur la page du fournisseur, qui le renverra ici
             // avec ?paiement=… . On garde le bouton désactivé pendant le
             // départ, sinon un second clic créerait un second paiement.
             window.location.assign(p.urlPaiement);
@@ -487,6 +488,20 @@ export class Paiement implements OnInit {
         this.erreur.set(messageErreur(e, 'Le paiement n’a pas pu être lancé.'));
       },
     });
+  }
+
+  /**
+   * Le client paie-t-il sur la page du fournisseur (MoneyFusion, GeniusPay),
+   * plutôt que par une demande poussée sur son téléphone (Campay) ?
+   *
+   * <p>⚠️ « Tout sauf Campay », et non une liste : un fournisseur ajouté
+   * côté serveur (D-56) doit afficher le bon écran sans attendre une nouvelle
+   * version de la boutique. Inconnu (configuration non lue) : faux, et la
+   * réponse du serveur corrige s'il le faut.</p>
+   */
+  protected parPage(): boolean {
+    const f = this.fournisseur();
+    return f !== null && f !== 'CAMPAY';
   }
 
   protected montant(valeur: number): string {
